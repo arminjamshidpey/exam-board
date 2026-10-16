@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<!--
+  Exam Board Live v0.9 (beta)
+  Designed by Armin Jamshidpey (code written with the assistance of a generative AI tool).
+  Copyright (c) 2026 Armin Jamshidpey. Released under the MIT License (see LICENSE).
+  Exam-room display driven by a control text file (see README.txt).
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exam Board Live v0.9 (beta)</title>
+<link rel="stylesheet" href="katex/katex.min.css">
+<script defer src="katex/katex.min.js"></script>
+<script defer src="katex/auto-render.min.js"></script>
+<style>
+  :root {
+    --bg: #0b0f14;
+    --panel: #111820;
+    --text: #f4f6f8;
+    --muted: #8a97a6;
+    --line: #223040;
+    --on: #1fbf5a;
+    --on-text: #06240f;
+    --off: #2a3542;
+    --off-text: #b7c2cf;
+    --key-off: #d92b2b;
+    --key-off-text: #ffffff;
+    --warn: #f59e0b;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --panel: #f3f5f8;
+    --text: #0b0f14;
+    --muted: #5b6673;
+    --line: #d6dde6;
+    --on: #16a34a;
+    --on-text: #ffffff;
+    --off: #e2e8f0;
+    --off-text: #475569;
+    --key-off: #dc2626;
+    --key-off-text: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ---------- TOP: announcement ---------- */
+  #top {
+    height: 34%;
+    min-height: 90px;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    border-bottom: 2px solid var(--line);
+  }
+  #toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+  #toolbar .spacer { flex: 1; }
+  #toolbar button {
+    background: var(--off);
+    color: var(--off-text);
+    border: 0;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  #toolbar button:hover { filter: brightness(1.15); }
+  #toolbar .label { color: var(--muted); font-size: 13px; }
+  #status { font-size: 13px; color: var(--muted); max-width: 38vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #status.err, #status.warn { color: var(--warn); font-weight: 600; }
+  #course { font-weight: 600; font-size: 15px; }
+  #logo { height: 30px; width: auto; margin-right: 6px; }
+  #dept { font-weight: 700; font-size: 15px; }
+  #dept:empty, #dept:empty + .sep { display: none; }
+  .sep { color: var(--muted); margin: 0 4px; }
+
+  #announcement {
+    flex: 1;
+    padding: 12px 24px;
+    overflow: auto;
+    line-height: 1.3;
+    font-size: 44px;
+  }
+  #announcement p { margin: 0 0 .5em; }
+  #announcement ul, #announcement ol { margin: .2em 0 .5em; padding-left: 1.3em; }
+  #announcement .katex-display { margin: .3em 0 .5em; }
+  #announcement .placeholder { color: var(--muted); }
+
+  /* ---------- divider ---------- */
+  #divider { height: 8px; cursor: row-resize; background: var(--bg); position: relative; }
+  #divider::after {
+    content: ""; position: absolute; left: 50%; top: 2px;
+    width: 60px; height: 4px; margin-left: -30px; border-radius: 2px; background: var(--line);
+  }
+
+  /* ---------- BOTTOM ---------- */
+  #bottom { flex: 1; display: flex; min-height: 0; }
+  #clockPane {
+    width: 75%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 10px; overflow: hidden;
+  }
+  #clock { font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; line-height: 1; white-space: nowrap; }
+  #ampm { font-weight: 700; letter-spacing: 0.1em; margin-top: 1vh; white-space: nowrap; line-height: 1; }
+  #times { color: var(--muted); font-weight: 600; margin-top: 1.2vh; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  #times b { color: var(--text); }
+  #wait {
+    display: none;
+    color: var(--key-off);
+    font-weight: 800;
+    text-align: center;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  body.countdown #ampm { letter-spacing: .15em; text-transform: uppercase; color: var(--muted); }
+  #notice {
+    display: none;
+    font-weight: 800;
+    text-align: center;
+    line-height: 1.15;
+    padding: 0 2vw;
+    color: var(--key-off);
+  }
+  body.ended #clock, body.ended #ampm, body.released #clock, body.released #ampm { display: none; }
+  body.ended #notice, body.released #notice { display: block; }
+  body.released #notice { color: var(--on); }
+  body.released #keysPane { display: none; }
+  body.released #clockPane { width: 100%; }
+  #collectBtn { display: none; }
+  body.ended #collectBtn, body.released #collectBtn { display: inline-block; }
+  body.released #collectBtn { background: var(--on); color: var(--on-text); }
+  body.pre #clock, body.pre #ampm { display: none; }
+  body.pre #wait { display: block; }
+  body.pre #times { margin-top: 3vh; }
+  #panelTitle { margin-left: 10px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+  #smallClock { font-variant-numeric: tabular-nums; margin-right: 6px; }
+
+  #keysPane {
+    width: 25%;
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 10px; border-left: 2px solid var(--line);
+  }
+  .key {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2vh;
+    border: 0; border-radius: 14px;
+    background: var(--key-off); color: var(--key-off-text);
+    font-family: inherit;
+    transition: background .15s, color .15s;
+    padding: 8px; min-height: 0; overflow: hidden;
+  }
+  .key.on { background: var(--on); color: var(--on-text); }
+  .key .name { font-weight: 700; text-align: center; line-height: 1.1; font-size: clamp(16px, 2.6vw, 48px); }
+  .key .sub { font-weight: 500; text-align: center; line-height: 1.15; font-size: clamp(12px, 1.5vw, 28px); opacity: .9; margin-top: -1vh; }
+  .key .sub:empty { display: none; }
+  .key .state { font-weight: 800; letter-spacing: 0.04em; font-size: clamp(16px, 3vw, 60px); line-height: 1; text-align: center; }
+</style>
+</head>
+<body>
+
+<div id="top">
+  <div id="toolbar">
+    <img id="logo" alt="" src="logo.png" onerror="this.style.display='none'">
+    <span id="dept">Cheriton School of Computer Science</span>
+    <span class="sep">|</span>
+    <span id="course">Exam Board</span>
+    <span class="label" id="panelTitle">Announcements</span>
+    <span class="spacer"></span>
+    <span id="smallClock" class="label"></span>
+    <span id="status">Loading…</span>
+    <button id="themeBtn" title="Switch light / dark">Theme</button>
+    <button id="collectBtn" title="Only this room. Click again to undo.">Papers collected</button>
+    <button id="fullBtn" title="Full screen (F11)">Full screen</button>
+  </div>
+  <div id="announcement"><span class="placeholder">Waiting for announcements…</span></div>
+</div>
+
+<div id="divider" title="Drag to resize"></div>
+
+<div id="bottom">
+  <div id="clockPane">
+    <div id="clock">00:00:00</div>
+    <div id="ampm"></div>
+    <div id="wait">Don't start yet,<br>read above</div>
+    <div id="notice"></div>
+    <div id="times"></div>
+  </div>
+  <div id="keysPane">
+    <div class="key" id="keyWashroom">
+      <span class="name">Washroom</span>
+      <span class="sub">(need to wait for a Proctor):</span>
+      <span class="state">Not allowed</span>
+    </div>
+    <div class="key" id="keyHandin">
+      <span class="name">Hand-in paper:</span>
+      <span class="sub"></span>
+      <span class="state">Not allowed</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const params = new URLSearchParams(location.search);
+  const FILE = params.get('file') || 'exam.txt';
+  const POLL_MS = Math.max(2000, +(params.get('poll') || 5000));
+
+  // ---------- server time ----------
+  // Offset (ms) between the server's clock (Date header on each fetch) and
+  // this PC's clock. 0 until the first successful fetch.
+  let serverOffset = 0, clockSource = 'this PC';
+  function now() { return new Date(Date.now() + serverOffset); }
+  function setOffset(srvMs, t0, label) {
+    // Date headers are whole seconds and stamped mid-request: add half a
+    // second and half the round trip to centre the estimate
+    const rtt = Date.now() - t0;
+    serverOffset = srvMs + 500 + rtt / 2 - Date.now();
+    clockSource = label;
+  }
+  // Default: the clock of the server that hosts this page, read from the
+  // Date header of every exam.txt fetch.
+  function noteServerTime(r, t0) {
+    if (timeServer) return;                 // an external time server is in use
+    const hdr = r.headers.get('Date');
+    if (!hdr) { clockSource = 'this PC (server sent no time)'; return; }
+    const srv = Date.parse(hdr);
+    if (!isNaN(srv)) setOffset(srv, t0, 'server');
+  }
+  // Optional: "timeserver:" in exam.txt names a URL to take the time from
+  // instead. The reply may be JSON with a datetime / utc_datetime /
+  // dateTime / currentDateTime field (worldtimeapi.org, timeapi.io, ...)
+  // or any response whose Date header is exposed to scripts (the server
+  // must send Access-Control-Expose-Headers: Date if it is on another host).
+  let timeServer = '';
+  async function pollTimeServer() {
+    if (!timeServer) return;
+    try {
+      const t0 = Date.now();
+      const r = await fetch(timeServer + (timeServer.includes('?') ? '&' : '?') + '_=' + t0, { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      let srv = NaN;
+      const ct = r.headers.get('Content-Type') || '';
+      if (ct.includes('json')) {
+        const j = await r.json();
+        const v = j.utc_datetime || j.datetime || j.dateTime || j.currentDateTime || j.time || j.now;
+        if (typeof v === 'number') srv = v < 1e12 ? v * 1000 : v;   // epoch seconds or ms
+        else if (v) srv = Date.parse(v);
+      }
+      if (isNaN(srv)) { const hdr = r.headers.get('Date'); if (hdr) srv = Date.parse(hdr); }
+      if (isNaN(srv)) throw new Error('no usable time in reply');
+      setOffset(srv, t0, 'time server');
+    } catch (e) {
+      clockSource = 'this PC (time server unreachable: ' + e.message + ')';
+    }
+    showStatus();
+  }
+  setInterval(pollTimeServer, 60000);
+
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  };
+
+  // ---------- theme / fullscreen ----------
+  const root = document.documentElement;
+  root.dataset.theme = store.get('theme', 'dark');
+  $('#themeBtn').onclick = () => { root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark'; store.set('theme', root.dataset.theme); };
+  function toggleFull() {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+    else document.exitFullscreen();
+  }
+  $('#fullBtn').onclick = toggleFull;
+  document.addEventListener('keydown', (e) => { if (e.key === 'f' || e.key === 'F') toggleFull(); });
+
+  // ---------- control file: parse ----------
+  // Format: "key: value" lines, then LaTeX blocks. A line that is exactly
+  // "instructions:" or "announcement:" starts a block; the block runs until
+  // the other header (or the end of the file).
+  function parseControl(text) {
+    const cfg = { announcement: '', instructions: '' };
+    const lines = text.replace(/\r/g, '').split('\n');
+    let block = null;
+    for (const line of lines) {
+      const hdr = line.match(/^\s*(instructions|announcement)\s*:\s*$/i);
+      if (hdr) { block = hdr[1].toLowerCase(); continue; }
+      if (block) { cfg[block] += line + '\n'; continue; }
+      if (/^\s*#/.test(line) || /^\s*$/.test(line)) continue;
+      const m = line.match(/^\s*([A-Za-z][\w-]*)\s*:\s*(.*)$/);
+      if (m) cfg[m[1].toLowerCase()] = m[2].trim();
+    }
+    return cfg;
+  }
+  function parseTime(s) {            // "09:30" -> minutes since midnight, or null
+    const m = (s || '').match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) return null;
+    const h = +m[1], mi = +m[2];
+    if (h > 23 || mi > 59) return null;
+    return h * 60 + mi;
+  }
+  function parseWindow(s) {          // "10:00-11:20" -> [from, to] or null
+    const m = (s || '').match(/^\s*(\d{1,2}:\d{2})\s*[-–—to]+\s*(\d{1,2}:\d{2})\s*$/);
+    if (!m) return null;
+    const a = parseTime(m[1]), b = parseTime(m[2]);
+    return (a === null || b === null) ? null : [a, b];
+  }
+
+  // ---------- LaTeX -> HTML (light subset; math is left for KaTeX) ----------
+  function escapeHtml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function latexToHtml(src) {
+    // Protect math so the text replacements don't touch it
+    const math = [];
+    let s = src.replace(/\\\[[\s\S]*?\\\]|\$\$[\s\S]*?\$\$|\\\([\s\S]*?\\\)|\$[^$\n]+?\$/g, (m) => {
+      math.push(m); return '\u0000' + (math.length - 1) + '\u0000';
+    });
+    s = escapeHtml(s);
+    // strip LaTeX comments (a % not preceded by backslash)
+    s = s.replace(/(^|[^\\])%.*$/gm, '$1');
+    s = s.replace(/\\%/g, '%');
+    // lists
+    s = s.replace(/\\begin\{itemize\}/g, '<ul>').replace(/\\end\{itemize\}/g, '</ul>');
+    s = s.replace(/\\begin\{enumerate\}/g, '<ol>').replace(/\\end\{enumerate\}/g, '</ol>');
+    s = s.replace(/\\item\s*/g, '<li>');
+    // simple inline commands
+    s = s.replace(/\\textbf\{([^{}]*)\}/g, '<b>$1</b>');
+    s = s.replace(/\\emph\{([^{}]*)\}/g, '<i>$1</i>');
+    s = s.replace(/\\textit\{([^{}]*)\}/g, '<i>$1</i>');
+    s = s.replace(/\\underline\{([^{}]*)\}/g, '<u>$1</u>');
+    s = s.replace(/\\section\*?\{([^{}]*)\}/g, '<b>$1</b><br>');
+    s = s.replace(/\\\\/g, '<br>');
+    s = s.replace(/\\noindent|\\par\b/g, '');
+    // paragraphs: blank lines
+    s = s.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean).map(p => '<p>' + p.replace(/\n/g, ' ') + '</p>').join('');
+    // restore math
+    s = s.replace(/\u0000(\d+)\u0000/g, (_, i) => math[+i]);
+    return s;
+  }
+
+  const ann = $('#announcement');
+  let lastAnnouncement = null;
+  let maxFont = 44;
+  // Shrink the announcement text until it fits the panel (so nothing is hidden off-screen)
+  function fitAnnouncement() {
+    let size = maxFont;
+    ann.style.fontSize = size + 'px';
+    for (let i = 0; i < 40 && ann.scrollHeight > ann.clientHeight + 1 && size > 16; i++) {
+      size = Math.max(16, size * 0.92);
+      ann.style.fontSize = size + 'px';
+    }
+  }
+  function renderAnnouncement(text) {
+    if (text === lastAnnouncement) return;
+    lastAnnouncement = text;
+    if (!text.trim()) { ann.innerHTML = '<span class="placeholder">No announcements.</span>'; fitAnnouncement(); return; }
+    ann.innerHTML = latexToHtml(text);
+    if (window.renderMathInElement) {
+      try {
+        renderMathInElement(ann, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '\\[', right: '\\]', display: true },
+            { left: '\\(', right: '\\)', display: false },
+            { left: '$', right: '$', display: false }
+          ],
+          throwOnError: false
+        });
+      } catch (e) {}
+    }
+    fitAnnouncement();
+  }
+
+  // ---------- state ----------
+  let cfg = {};
+  let start = null, end = null, winHandin = null, winWash = null;
+  const keyWash = $('#keyWashroom'), keyHand = $('#keyHandin');
+
+  function fmt(min) {
+    if (min === null) return '?';
+    const h = Math.floor(min / 60), m = min % 60;
+    const h12 = h % 12 || 12;
+    return h12 + ':' + String(m).padStart(2, '0') + (h >= 12 ? ' PM' : ' AM');
+  }
+  function fmtWindow(w) { return w ? (fmt(w[0]) + ' – ' + fmt(w[1])) : ''; }
+
+  function applyConfig(c) {
+    cfg = c;
+    const ts = (c.timeserver || '').trim();
+    if (ts !== timeServer) { timeServer = ts; serverOffset = 0; clockSource = 'this PC'; if (ts) pollTimeServer(); }
+    $('#course').textContent = c.course || 'Exam Board';
+    $('#dept').textContent = ('department' in c) ? c.department : 'Cheriton School of Computer Science';
+    if (c.logo && c.logo !== $('#logo').getAttribute('src')) { $('#logo').style.display = ''; $('#logo').src = c.logo; }
+    start = parseTime(c.start); end = parseTime(c.end);
+    const dur = parseInt(c.duration, 10);
+    if (end === null && start !== null && dur > 0) end = start + dur;   // "duration: 110" (minutes)
+    countdown = /^(countdown|remaining|yes|on|true)$/i.test((c.display || '').trim());
+    document.body.classList.toggle('countdown', countdown);
+    $('#ampm').style.display = '';
+    winHandin = parseWindow(c.handin); winWash = parseWindow(c.washroom);
+    const fs = parseInt(c.fontsize, 10);
+    maxFont = (fs >= 12 && fs <= 300) ? fs : 44;
+    lastAnnouncement = null;   // force re-render so the new size applies
+    $('#times').innerHTML = (start !== null || end !== null)
+      ? 'Start <b>' + fmt(start) + '</b> &nbsp;·&nbsp; End <b>' + fmt(end) + '</b>' : '';
+    endMessage = (c.endmessage || '').trim() || 'Time is up. Please remain in your seats until all papers have been collected.';
+    releaseMessage = (c.releasemessage || '').trim() || 'All papers have been collected. You may leave now.';
+    configWarnings = validateConfig(c);
+    updatePhase(true);
+    updateKeys();
+    fitClock();
+    showStatus();
+  }
+
+  // Checks for the mistakes a coordinator is most likely to make in exam.txt.
+  // Returns a list of short messages; shown in orange in the toolbar.
+  function validateConfig(c) {
+    const w = [];
+    const bad = (k) => (c[k] || '').trim() !== '' && parseTime(c[k]) === null;
+    if (bad('start')) w.push('start time "' + c.start + '" is not HH:MM');
+    if (bad('end')) w.push('end time "' + c.end + '" is not HH:MM');
+    if ((c.duration || '').trim() !== '' && !(parseInt(c.duration, 10) > 0)) w.push('duration "' + c.duration + '" is not a number of minutes');
+    if ((c.end || '').trim() !== '' && (c.duration || '').trim() !== '') w.push('both end and duration given; end is used');
+    if (start !== null && end !== null && end <= start) w.push('end time is not after start time');
+    if (start === null && end !== null) w.push('end given but no start');
+    if (start !== null && end === null) w.push('start given but no end or duration');
+    for (const [key, win] of [['handin', winHandin], ['washroom', winWash]]) {
+      const v = (c[key] || '').trim();
+      if (v === '') continue;
+      if (!win) { w.push(key + ' window "' + v + '" is not HH:MM-HH:MM'); continue; }
+      if (win[1] <= win[0]) w.push(key + ' window ends before it starts');
+      else if (start !== null && end !== null && (win[0] < start || win[1] > end)) w.push(key + ' window is outside the exam time');
+      const o = (c[key + '-override'] || '').trim().toLowerCase();
+      if (o && !/^(on|off|yes|no|allowed|not allowed)$/.test(o)) w.push(key + '-override "' + o + '" should be on or off');
+    }
+    if (countdown && end === null) w.push('display: countdown needs an end time or duration');
+    for (const k of Object.keys(c)) {
+      if (!KNOWN_KEYS.has(k)) w.push('unknown setting "' + k + ':"');
+    }
+    return w;
+  }
+  const KNOWN_KEYS = new Set(['course', 'department', 'logo', 'timeserver', 'start', 'end', 'duration', 'display',
+    'handin', 'washroom', 'handin-override', 'washroom-override', 'fontsize', 'endmessage', 'releasemessage', 'instructions', 'announcement']);
+  let configWarnings = [];
+
+  // ---------- phase: before the start time, show instructions + "Don't start yet" ----------
+  let beforeStart = null, countdown = false, phase = null, released = false;
+  function isBeforeStart() {
+    if (start === null) return false;
+    const d = now();
+    return d.getHours() * 60 + d.getMinutes() < start;
+  }
+  function isEnded() {
+    if (end === null) return false;
+    const d = now();
+    return d.getHours() * 60 + d.getMinutes() >= end;
+  }
+  // Phases: pre (before start) -> running -> ended (after end time) -> released
+  // (this room's proctor pressed "Papers collected"; local to this room).
+  const notice = $('#notice');
+  function updatePhase(force) {
+    const b = isBeforeStart(), e = !b && isEnded();
+    if (!e) released = false;                       // a new end time re-arms the switch
+    const ph = b ? 'pre' : released ? 'released' : e ? 'ended' : 'running';
+    if (ph === phase && !force) return;
+    phase = ph; beforeStart = b;
+    document.body.classList.toggle('pre', b);
+    document.body.classList.toggle('ended', ph === 'ended');
+    document.body.classList.toggle('released', ph === 'released');
+    $('#panelTitle').textContent = b ? 'Instructions' : 'Announcements';
+    renderAnnouncement((b ? cfg.instructions : cfg.announcement) || '');
+    notice.textContent = ph === 'released' ? releaseMessage : ph === 'ended' ? endMessage : '';
+    $('#collectBtn').textContent = ph === 'released' ? 'Undo "papers collected"' : 'Papers collected';
+    fitClock();
+  }
+  $('#collectBtn').onclick = () => { if (phase === 'ended' || phase === 'released') { released = !released; updatePhase(true); } };
+  let endMessage = '', releaseMessage = '';
+
+  function decide(win, override) {
+    const o = (override || '').trim().toLowerCase();
+    if (o === 'on' || o === 'yes' || o === 'allowed') return true;
+    if (o === 'off' || o === 'no' || o === 'not allowed') return false;
+    if (!win) return false;
+    const d = now(), m = d.getHours() * 60 + d.getMinutes();
+    return m >= win[0] && m < win[1];
+  }
+  function setKey(el, on) {
+    el.classList.toggle('on', on);
+    el.querySelector('.state').textContent = on ? 'Allowed' : 'Not allowed';
+  }
+  function updateKeys() {
+    setKey(keyWash, decide(winWash, cfg['washroom-override']));
+    setKey(keyHand, decide(winHandin, cfg['handin-override']));
+  }
+
+  // ---------- polling ----------
+  const statusEl = $('#status');
+  let lastUpdated = null;
+  function showStatus() {
+    if (!lastUpdated || statusEl.classList.contains('err')) return;
+    if (configWarnings.length) {
+      statusEl.classList.add('warn');
+      statusEl.textContent = 'Check exam.txt: ' + configWarnings.join('; ');
+      statusEl.title = statusEl.textContent;
+      return;
+    }
+    statusEl.classList.remove('warn'); statusEl.title = '';
+    statusEl.textContent = 'Updated ' + lastUpdated.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }) + ' · clock: ' + clockSource;
+  }
+  let lastText = null;
+  async function poll() {
+    try {
+      const url = FILE + (FILE.includes('?') ? '&' : '?') + '_=' + Date.now();
+      const t0 = Date.now();
+      const r = await fetch(url, { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      noteServerTime(r, t0);
+      const text = await r.text();
+      if (text !== lastText) { lastText = text; applyConfig(parseControl(text)); }
+      statusEl.classList.remove('err');
+      lastUpdated = now(); showStatus();
+    } catch (e) {
+      statusEl.classList.add('err');
+      statusEl.textContent = (lastText === null ? 'Cannot load ' : 'Lost connection to ') + FILE + ': ' + e.message;
+    }
+  }
+  poll();
+  setInterval(poll, POLL_MS);
+  // KaTeX loads with defer; re-render once it's ready in case the file arrived first
+  window.addEventListener('load', () => { const t = lastAnnouncement; lastAnnouncement = null; if (t !== null) renderAnnouncement(t); });
+
+  // ---------- clock ----------
+  const clock = $('#clock'), ampm = $('#ampm'), timesEl = $('#times'), pane = $('#clockPane');
+  const pad = (n) => String(n).padStart(2, '0');
+  let lastMinute = -1;
+  function tick() {
+    const d = now();
+    let h = d.getHours();
+    ampm.textContent = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    $('#smallClock').textContent = h + ':' + pad(d.getMinutes()) + ' ' + ampm.textContent;
+    if (countdown && end !== null && !beforeStart) {
+      // remaining time until the end, counted with the same (server) clock
+      const endMs = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(end / 60), end % 60, 0).getTime();
+      let left = Math.max(0, Math.round((endMs - d.getTime()) / 1000));
+      const hh = Math.floor(left / 3600), mm = Math.floor(left % 3600 / 60), ss = left % 60;
+      clock.textContent = (hh ? hh + ':' + pad(mm) : String(mm)) + ':' + pad(ss);
+      ampm.textContent = left > 0 ? 'remaining' : 'TIME IS UP';
+    } else {
+      clock.textContent = h + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    }
+    if (d.getMinutes() !== lastMinute) { lastMinute = d.getMinutes(); updateKeys(); updatePhase(); }
+  }
+  const wait = $('#wait');
+  function fitClock() {
+    const w = pane.clientWidth - 20, hgt = pane.clientHeight - 20;
+    const hasTimes = timesEl.textContent.trim() !== '';
+    if (phase === 'ended' || phase === 'released') {
+      // wrapped message instead of the clock: shrink until it fits
+      const avail = hgt - (hasTimes ? timesEl.offsetHeight + 30 : 0);
+      let size = Math.min(w / 12, avail / 2.4);
+      timesEl.style.fontSize = Math.max(14, size * 0.4) + 'px';
+      notice.style.fontSize = size + 'px';
+      for (let i = 0; i < 30 && notice.scrollHeight > avail && size > 18; i++) { size *= 0.93; notice.style.fontSize = size + 'px'; }
+      return;
+    }
+    if (beforeStart) {
+      // two-line red notice instead of the clock
+      let size = Math.min(w / (16 * 0.55), hgt * (hasTimes ? 0.55 : 0.7) / 2.3);
+      wait.style.fontSize = size + 'px';
+      timesEl.style.fontSize = Math.max(14, size * 0.45) + 'px';
+      for (let i = 0; i < 4 && wait.scrollWidth > w; i++) { size *= w / wait.scrollWidth * 0.98; wait.style.fontSize = size + 'px'; }
+      return;
+    }
+    let share = 1 - 0.22 - (hasTimes ? 0.14 : 0);
+    let size = Math.min(w / (8 * 0.60), hgt * share * 0.95);
+    const apply = () => {
+      clock.style.fontSize = size + 'px';
+      ampm.style.fontSize = (size * 0.22) + 'px';
+      timesEl.style.fontSize = Math.max(14, size * 0.13) + 'px';
+    };
+    apply();
+    for (let i = 0; i < 4 && clock.scrollWidth > w; i++) { size *= w / clock.scrollWidth * 0.98; apply(); }
+  }
+  tick(); fitClock();
+  setInterval(tick, 250);
+  window.addEventListener('resize', () => { fitClock(); fitAnnouncement(); });
+  new ResizeObserver(fitClock).observe(pane);
+  new ResizeObserver(fitAnnouncement).observe(ann);
+
+  // ---------- draggable divider ----------
+  const top = $('#top'), divider = $('#divider');
+  top.style.height = store.get('topHeight', 34) + '%';
+  let dragging = false;
+  divider.addEventListener('mousedown', (e) => { dragging = true; e.preventDefault(); });
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const pct = Math.max(12, Math.min(70, e.clientY / window.innerHeight * 100));
+    top.style.height = pct + '%';
+    fitClock();
+  });
+  document.addEventListener('mouseup', () => { if (dragging) { dragging = false; store.set('topHeight', parseFloat(top.style.height)); } });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+# ===========================================================
+#  Exam Board control file
+#  Edit this file and save it. Every room screen updates
+#  within about 5 seconds. Lines starting with # are ignored.
+#  Times are 24-hour, HH:MM.
+# ===========================================================
+
+# Shown top-left. Leave "department:" empty to hide it. The logo is
+# the file logo.png in this directory (or give another file name).
+department: Cheriton School of Computer Science
+logo:      logo.png
+course:    MATH 135, Midterm 1
+
+# Time source. Leave empty (default) to use the clock of the server that
+# hosts this page. Or give the URL of a time service, e.g.
+#   timeserver: https://worldtimeapi.org/api/timezone/Etc/UTC
+timeserver:
+start:     09:00
+end:       11:30
+# Instead of "end:" you may give the length in minutes:  duration: 110
+
+# What the big display shows once the exam has started:
+#   clock      (default) the time of day
+#   countdown  the time REMAINING until the end, counting down
+display:   clock
+
+# When students may hand in and leave (from–to)
+handin:    10:00-11:20
+
+# When students may go to the washroom (from–to)
+washroom:  09:30-11:15
+
+# Optional overrides. Leave blank for automatic (time-based).
+# Use  on  or  off  to force a key regardless of the time.
+handin-override:
+washroom-override:
+
+# Shown in place of the clock once the end time has passed (red), and
+# after the proctor presses "Papers collected" on that room's PC (green).
+# Leave empty for the defaults shown here.
+endmessage:     Time is up. Please remain in your seats until all papers have been collected.
+releasemessage: All papers have been collected. You may leave now.
+
+# Announcement text size in pixels (optional)
+fontsize:  44
+
+# ---- Two LaTeX blocks follow. ----
+# BEFORE the start time the screen shows the INSTRUCTIONS block and,
+# instead of the clock, "Don't start yet, read above" in red.
+# FROM the start time on it shows the ANNOUNCEMENT block and the clock.
+# $...$ and \[...\] for math, \textbf{}, \emph{}, \\ for a line break,
+# \begin{itemize} \item ... \end{itemize} for a list.
+
+instructions:
+\textbf{Do not open the exam booklet until told to.}
+
+\begin{itemize}
+  \item Phones and smartwatches off and in your bag under your desk.
+  \item Only pens, pencils, erasers and your WatCard on the desk.
+  \item Write your name and ID on \emph{every} page.
+  \item Raise your hand if you have a question; do not leave your seat.
+\end{itemize}
+
+announcement:
+\textbf{Correction, Question 3:} the integral should read
+\[ \int_0^1 x^2\,dx = \frac{1}{3}, \quad\text{not } \frac{1}{2}. \]
+
+Show all your work. Raise your hand if you have a question.

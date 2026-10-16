@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<!--
+  Exam Board v0.9 (beta)
+  Designed by Armin Jamshidpey (code written with the assistance of a generative AI tool).
+  Copyright (c) 2026 Armin Jamshidpey. Released under the MIT License (see LICENSE).
+  Stand-alone exam-room display; no server or internet needed.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exam Board v0.9 (beta)</title>
+<style>
+  :root {
+    --bg: #0b0f14;
+    --panel: #111820;
+    --text: #f4f6f8;
+    --muted: #8a97a6;
+    --line: #223040;
+    --on: #1fbf5a;
+    --on-text: #06240f;
+    --off: #2a3542;
+    --off-text: #b7c2cf;
+    --key-off: #d92b2b;
+    --key-off-text: #ffffff;
+    --accent: #3b82f6;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --panel: #f3f5f8;
+    --text: #0b0f14;
+    --muted: #5b6673;
+    --line: #d6dde6;
+    --on: #16a34a;
+    --on-text: #ffffff;
+    --off: #e2e8f0;
+    --off-text: #475569;
+    --key-off: #dc2626;
+    --key-off-text: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ---------- TOP: message area ---------- */
+  #top {
+    height: 32%;
+    min-height: 90px;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    border-bottom: 2px solid var(--line);
+  }
+  #toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+  #toolbar .spacer { flex: 1; }
+  #toolbar button, #toolbar select {
+    background: var(--off);
+    color: var(--off-text);
+    border: 0;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  #toolbar button:hover { filter: brightness(1.15); }
+  #toolbar button:disabled { opacity: .4; cursor: default; filter: none; }
+  #toolbar .label { color: var(--muted); font-size: 13px; margin-left: 4px; }
+  #logo { height: 30px; width: auto; margin-right: 6px; }
+  #dept { font-weight: 700; font-size: 15px; }
+  #dept:empty, #dept:empty + .sep { display: none; }
+  .sep { color: var(--muted); margin: 0 4px; }
+  #fontSize { min-width: 3.5em; text-align: center; color: var(--text); font-size: 14px; }
+  #message {
+    flex: 1;
+    padding: 12px 20px;
+    outline: none;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.25;
+    user-select: text;
+    font-size: 48px;
+  }
+  #message:empty::before {
+    content: attr(data-placeholder);
+    color: var(--muted);
+  }
+
+  /* ---------- divider ---------- */
+  #divider {
+    height: 8px;
+    cursor: row-resize;
+    background: var(--bg);
+    position: relative;
+  }
+  #divider::after {
+    content: "";
+    position: absolute;
+    left: 50%; top: 2px;
+    width: 60px; height: 4px;
+    margin-left: -30px;
+    border-radius: 2px;
+    background: var(--line);
+  }
+
+  /* ---------- BOTTOM ---------- */
+  #bottom {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+  #clockPane {
+    width: 75%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    overflow: hidden;
+  }
+  #clock {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  #ampm {
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    margin-top: 1vh;
+    white-space: nowrap;
+    line-height: 1;
+  }
+  #date {
+    color: var(--muted);
+    font-weight: 500;
+    margin-top: 1vh;
+    white-space: nowrap;
+  }
+
+  #keysPane {
+    width: 25%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    border-left: 2px solid var(--line);
+  }
+  .key {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2vh;
+    border: 0;
+    border-radius: 14px;
+    cursor: pointer;
+    background: var(--key-off);
+    color: var(--key-off-text);
+    font-family: inherit;
+    transition: background .15s, color .15s, transform .05s;
+    padding: 8px;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .key:active { transform: scale(0.98); }
+  .key.on { background: var(--on); color: var(--on-text); }
+  .key .name {
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.1;
+    font-size: clamp(16px, 2.6vw, 48px);
+  }
+  .key .sub {
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.15;
+    font-size: clamp(12px, 1.5vw, 28px);
+    opacity: .9;
+    margin-top: -1vh;
+  }
+  .key .sub:empty { display: none; }
+  .key .state {
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    font-size: clamp(16px, 3vw, 60px);
+    line-height: 1;
+    text-align: center;
+  }
+
+  /* ---------- settings popup ---------- */
+  #settings {
+    position: fixed;
+    top: 54px; right: 10px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 10;
+    min-width: 230px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    font-size: 14px;
+  }
+  #settings.open { display: flex; }
+  #settings label { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  #settings input[type=text] { width: 120px; font-family: inherit; font-size: 13px; padding: 4px 6px; border-radius: 5px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+  #settings h4 { margin: 4px 0 0; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+</style>
+</head>
+<body>
+
+<div id="top">
+  <div id="toolbar">
+    <img id="logo" alt="" src="logo.png" onerror="this.style.display='none'">
+    <span id="dept">Cheriton School of Computer Science</span>
+    <span class="sep">|</span>
+    <button id="fontDown" title="Smaller text (Ctrl + −)">A−</button>
+    <span id="fontSize">48</span>
+    <button id="fontUp" title="Larger text (Ctrl + +)">A+</button>
+    <button id="clearBtn" title="Clear message">Clear</button>
+    <button id="undoBtn" title="Undo (Ctrl + Z)" disabled>Undo</button>
+    <span class="label">Keys: press 1 / 2 &nbsp;·&nbsp; F11 = full screen</span>
+    <span class="spacer"></span>
+    <button id="themeBtn" title="Switch light / dark">Theme</button>
+    <button id="fullBtn" title="Full screen (F11)">Full screen</button>
+    <button id="settingsBtn" title="Settings">⚙</button>
+  </div>
+  <div id="message" contenteditable="true" spellcheck="false"
+       data-placeholder="Type announcements here… (e.g. Phones off. Raise your hand for a question.)"></div>
+</div>
+
+<div id="divider" title="Drag to resize"></div>
+
+<div id="bottom">
+  <div id="clockPane">
+    <div id="clock">00:00:00</div>
+    <div id="ampm"></div>
+    <div id="date"></div>
+  </div>
+  <div id="keysPane">
+    <button class="key" data-key="1"><span class="name">Washroom</span><span class="sub"></span><span class="state">Not allowed</span></button>
+    <button class="key" data-key="2"><span class="name">Hand-in paper</span><span class="sub"></span><span class="state">Not allowed</span></button>
+    <!-- <button class="key" data-key="3"><span class="name">Signature time</span><span class="state">OFF</span></button> -->
+  </div>
+</div>
+
+<div id="settings">
+  <h4>Header</h4>
+  <label>Department <input type="text" id="optDept"></label>
+  <h4>Clock</h4>
+  <label>24-hour <input type="checkbox" id="opt24"></label>
+  <label>Show seconds <input type="checkbox" id="optSec" checked></label>
+  <label>Show date <input type="checkbox" id="optDate" checked></label>
+  <h4>Key labels &nbsp;<span style="font-weight:400;text-transform:none;letter-spacing:0">(use \\ for a second line)</span></h4>
+  <label>Key 1 <input type="text" id="lbl1"></label>
+  <label>Key 2 <input type="text" id="lbl2"></label>
+  <!-- <label>Key 3 <input type="text" id="lbl3"></label> -->
+  <label>Reset keys to OFF on start <input type="checkbox" id="optResetKeys" checked></label>
+</div>
+
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  };
+
+  // ---------- message area, font size, undo ----------
+  const msg = $('#message'), undoBtn = $('#undoBtn');
+  let fontSize = store.get('fontSize', 48);
+  function applyFont() {
+    fontSize = Math.max(12, Math.min(300, fontSize));
+    msg.style.fontSize = fontSize + 'px';
+    $('#fontSize').textContent = fontSize;
+    store.set('fontSize', fontSize);
+  }
+  function stepFont(d) { fontSize += d * (fontSize >= 60 ? 8 : 4); applyFont(); }
+  $('#fontUp').onclick = () => stepFont(1);
+  $('#fontDown').onclick = () => stepFont(-1);
+
+  // Undo history: snapshot of the text before each change (typing is grouped by pauses)
+  const history = [];
+  let lastSnapshot = store.get('message', '');
+  let typingTimer = null;
+  function pushHistory() {
+    if (history[history.length - 1] === lastSnapshot) return;
+    history.push(lastSnapshot);
+    if (history.length > 200) history.shift();
+    undoBtn.disabled = false;
+  }
+  function commit() { lastSnapshot = msg.textContent; store.set('message', lastSnapshot); }
+  function undo() {
+    if (!history.length) return;
+    clearTimeout(typingTimer);
+    msg.textContent = history.pop();
+    commit();
+    undoBtn.disabled = history.length === 0;
+    msg.focus();
+    // put the caret at the end
+    const r = document.createRange(); r.selectNodeContents(msg); r.collapse(false);
+    const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+  msg.textContent = lastSnapshot;
+  msg.addEventListener('input', () => {
+    if (!typingTimer) pushHistory();
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => { typingTimer = null; commit(); }, 700);
+    store.set('message', msg.textContent);
+  });
+  msg.addEventListener('blur', () => { if (typingTimer) { clearTimeout(typingTimer); typingTimer = null; commit(); } });
+  $('#clearBtn').onclick = () => {
+    if (typingTimer) { clearTimeout(typingTimer); typingTimer = null; commit(); }
+    if (msg.textContent === '') return;
+    pushHistory();
+    msg.textContent = '';
+    commit();
+    msg.focus();
+  };
+  undoBtn.onclick = undo;
+  // paste as plain text only
+  msg.addEventListener('paste', (e) => {
+    e.preventDefault();
+    document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text'));
+  });
+  applyFont();
+
+  // ---------- theme ----------
+  const root = document.documentElement;
+  root.dataset.theme = store.get('theme', 'dark');
+  $('#themeBtn').onclick = () => {
+    root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    store.set('theme', root.dataset.theme);
+  };
+
+  // ---------- full screen ----------
+  function toggleFull() {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+    else document.exitFullscreen();
+  }
+  $('#fullBtn').onclick = toggleFull;
+
+  // ---------- settings ----------
+  const settings = $('#settings');
+  $('#settingsBtn').onclick = (e) => { e.stopPropagation(); settings.classList.toggle('open'); };
+  document.addEventListener('click', (e) => { if (!settings.contains(e.target)) settings.classList.remove('open'); });
+  const opts = {
+    h24: store.get('h24', false),
+    sec: store.get('sec', true),
+    date: store.get('date', true),
+    resetKeys: store.get('resetKeys', true),
+    // "\\" in a label starts a smaller second line
+    labels: store.get('labels2', ['Washroom\\\\(need to wait for a Proctor):', 'Hand-in paper:', 'Signature time:'])
+  };
+  $('#opt24').checked = opts.h24;
+  $('#optSec').checked = opts.sec;
+  $('#optDate').checked = opts.date;
+  $('#optResetKeys').checked = opts.resetKeys;
+  $('#opt24').onchange = (e) => { opts.h24 = e.target.checked; store.set('h24', opts.h24); tick(); fitClock(); };
+  $('#optSec').onchange = (e) => { opts.sec = e.target.checked; store.set('sec', opts.sec); tick(); fitClock(); };
+  $('#optDate').onchange = (e) => { opts.date = e.target.checked; store.set('date', opts.date); tick(); fitClock(); };
+  $('#optResetKeys').onchange = (e) => { opts.resetKeys = e.target.checked; store.set('resetKeys', opts.resetKeys); };
+  const dept = store.get('dept', 'Cheriton School of Computer Science');
+  $('#dept').textContent = dept; $('#optDept').value = dept;
+  $('#optDept').oninput = (e) => { $('#dept').textContent = e.target.value.trim(); store.set('dept', e.target.value.trim()); };
+
+  // ---------- keys ----------
+  const keys = Array.from(document.querySelectorAll('.key'));
+  const savedStates = opts.resetKeys ? [false, false, false] : store.get('keyStates', [false, false, false]);
+  function applyLabel(k, text) {
+    const parts = text.split('\\\\');
+    k.querySelector('.name').textContent = parts[0].trim();
+    k.querySelector('.sub').textContent = parts.slice(1).join(' ').trim();
+  }
+  keys.forEach((k, i) => {
+    applyLabel(k, opts.labels[i]);
+    setKey(i, !!savedStates[i]);
+    k.onclick = () => { setKey(i, !k.classList.contains('on')); k.blur(); };
+    const lbl = $('#lbl' + (i + 1));
+    if (!lbl) return;
+    lbl.value = opts.labels[i];
+    lbl.oninput = (e) => {
+      opts.labels[i] = e.target.value || ('Key ' + (i + 1));
+      applyLabel(k, opts.labels[i]);
+      store.set('labels2', opts.labels);
+    };
+  });
+  function setKey(i, on) {
+    keys[i].classList.toggle('on', on);
+    keys[i].querySelector('.state').textContent = on ? 'Allowed' : 'Not allowed';
+    store.set('keyStates', keys.map(k => k.classList.contains('on')));
+  }
+
+  // ---------- keyboard shortcuts ----------
+  document.addEventListener('keydown', (e) => {
+    const typing = document.activeElement === msg || document.activeElement.tagName === 'INPUT';
+    if (e.ctrlKey && (e.key === '=' || e.key === '+')) { e.preventDefault(); stepFont(1); return; }
+    if (e.ctrlKey && e.key === '-') { e.preventDefault(); stepFont(-1); return; }
+    if (e.ctrlKey && (e.key === 'z' || e.key === 'Z') && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); undo(); return; }
+    if (typing) { if (e.key === 'Escape') msg.blur(); return; }
+    if (/^[1-9]$/.test(e.key) && keys[+e.key - 1]) { const i = +e.key - 1; setKey(i, !keys[i].classList.contains('on')); }
+    if (e.key === 'f' || e.key === 'F') toggleFull();
+    if (e.key === 'Escape') settings.classList.remove('open');
+  });
+
+  // ---------- clock ----------
+  const clock = $('#clock'), ampm = $('#ampm'), dateEl = $('#date'), pane = $('#clockPane');
+  const pad = (n) => String(n).padStart(2, '0');
+  function tick() {
+    const d = new Date();
+    let h = d.getHours();
+    if (!opts.h24) { ampm.textContent = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; }
+    ampm.style.display = opts.h24 ? 'none' : '';
+    let t = (opts.h24 ? pad(h) : h) + ':' + pad(d.getMinutes());
+    if (opts.sec) t += ':' + pad(d.getSeconds());
+    clock.textContent = t;
+    dateEl.style.display = opts.date ? '' : 'none';
+    dateEl.textContent = d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  }
+  function fitClock() {
+    const w = pane.clientWidth - 20, hgt = pane.clientHeight - 20;
+    const chars = opts.sec ? 8 : 5;
+    // reserve vertical room for the AM/PM line and the date line
+    let share = 1;
+    if (!opts.h24) share -= 0.22;
+    if (opts.date) share -= 0.14;
+    let size = Math.min(w / (chars * 0.60), hgt * share * 0.95);
+    clock.style.fontSize = size + 'px';
+    ampm.style.fontSize = (size * 0.22) + 'px';
+    dateEl.style.fontSize = Math.max(14, size * 0.13) + 'px';
+    for (let i = 0; i < 4 && clock.scrollWidth > w; i++) {
+      size *= w / clock.scrollWidth * 0.98;
+      clock.style.fontSize = size + 'px';
+      ampm.style.fontSize = (size * 0.22) + 'px';
+      dateEl.style.fontSize = Math.max(14, size * 0.13) + 'px';
+    }
+  }
+  tick(); fitClock();
+  setInterval(tick, 250);
+  window.addEventListener('resize', fitClock);
+  new ResizeObserver(fitClock).observe(pane);
+
+  // ---------- draggable divider ----------
+  const top = $('#top'), divider = $('#divider');
+  top.style.height = store.get('topHeight', 32) + '%';
+  let dragging = false;
+  divider.addEventListener('mousedown', (e) => { dragging = true; e.preventDefault(); });
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const pct = Math.max(12, Math.min(70, e.clientY / window.innerHeight * 100));
+    top.style.height = pct + '%';
+    fitClock();
+  });
+  document.addEventListener('mouseup', () => {
+    if (dragging) { dragging = false; store.set('topHeight', parseFloat(top.style.height)); }
+  });
+})();
+</script>
+</body>
+</html>

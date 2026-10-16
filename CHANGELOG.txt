@@ -1,0 +1,23 @@
+EXAM BOARD CHANGELOG
+Newest first. Version numbers are in the <title> and header comment of
+each .html file and at the top of README.txt.
+
+v0.9 (beta), 2026-10-15
+  First version shown to colleagues.
+  - Stand-alone exam-board.html: large clock, free-text announcements
+    with adjustable size, Washroom and Hand-in keys (Allowed / Not
+    allowed), undo, light/dark theme, settings in a gear menu.
+  - Live exam-live.html: driven by exam.txt on the server; instructions
+    before the start time with "Don't start yet, read above", then
+    announcements and the clock; LaTeX with bundled KaTeX; keys turn
+    green automatically inside their time windows, with manual
+    overrides; optional countdown display (clock recommended).
+  - Time taken from the hosting server's clock; optional external time
+    server.
+  - Logo slot and department name (default: Cheriton School of
+    Computer Science).
+  - End-of-exam message in place of the clock, and a per-room "Papers
+    collected" switch that shows the release message.
+  - Validation of exam.txt with warnings in the toolbar.
+  - README with setup, checklist, customisation for other
+    institutions, and beta/responsibility notice. MIT License.
