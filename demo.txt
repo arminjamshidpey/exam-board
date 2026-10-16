@@ -65,4 +65,7 @@ announcement:
 \textbf{This is a demo.} A correction would look like this: the integral should read
 \[ \int_0^1 x^2\,dx = \frac{1}{3}, \quad\text{not } \frac{1}{2}. \]
 
+A diagram can be shown too, for example the tree in Question 4:
+\includegraphics[width=25%]{tree.svg}
+
 Show all your work. Raise your hand if you have a question.

@@ -20,5 +20,7 @@ v0.9 (beta), 2026-10-15
     collected" switch that shows the release message.
   - Validation of exam.txt with warnings in the toolbar.
   - demo.txt, a sample control file for demonstrations.
+  - Both pages keep the display awake while visible (screen wake lock).
+  - Pictures in announcements with \includegraphics (PNG, JPG, SVG, ...).
   - README with setup, checklist, customisation for other
     institutions, and beta/responsibility notice. MIT License.

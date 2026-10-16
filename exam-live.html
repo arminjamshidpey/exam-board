@@ -102,6 +102,8 @@
   #announcement ul, #announcement ol { margin: .2em 0 .5em; padding-left: 1.3em; }
   #announcement .katex-display { margin: .3em 0 .5em; }
   #announcement .placeholder { color: var(--muted); }
+  #announcement img.figure { display: block; margin: .3em auto; max-width: 100%; max-height: var(--fig-max, 60vh); object-fit: contain; }
+  :root[data-theme="dark"] #announcement img.figure, :root:not([data-theme="light"]) #announcement img.figure { background: #fff; border-radius: 6px; padding: 4px; }
 
   /* ---------- divider ---------- */
   #divider { height: 8px; cursor: row-resize; background: var(--bg); position: relative; }
@@ -281,6 +283,18 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   };
 
+  // ---------- keep the screen awake ----------
+  // Asks the browser to stop the display from dimming or sleeping while this
+  // tab is visible (Screen Wake Lock API: Edge, Chrome, Firefox 126+). The
+  // lock is released when the tab is hidden, so it is re-requested on return.
+  let wakeLock = null;
+  async function keepAwake() {
+    if (!('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
+    try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) { wakeLock = null; }
+  }
+  document.addEventListener('visibilitychange', keepAwake);
+  keepAwake();
+
   // ---------- theme / fullscreen ----------
   const root = document.documentElement;
   root.dataset.theme = store.get('theme', 'dark');
@@ -333,6 +347,18 @@
       math.push(m); return '\u0000' + (math.length - 1) + '\u0000';
     });
     s = escapeHtml(s);
+    // \includegraphics[width=50%]{file.png}: file must sit next to exam.txt
+    // (a plain relative name; no http, no paths going up), width optional as
+    // NN%, 0.5\textwidth or 0.5\linewidth.
+    s = s.replace(/\\includegraphics(?:\[([^\]]*)\])?\{([^{}]*)\}/g, (m, opts, file) => {
+      file = file.trim();
+      if (!/^[\w.-]+(?:\/[\w.-]+)*\.(png|jpe?g|gif|svg|webp)$/i.test(file) || file.includes('..')) return '[image: ' + file + ']';
+      let w = '';
+      const pm = /width\s*=\s*([\d.]+)\s*(%|\\(?:text|line)width)?/.exec(opts || '');
+      if (pm) { const v = parseFloat(pm[1]); w = ' style="width:' + (pm[2] === '%' ? v : v * 100) + '%"'; }
+      math.push('<img class="figure" src="' + file + '" alt=""' + w + '>');   // protected like math
+      return '\u0000' + (math.length - 1) + '\u0000';
+    });
     // strip LaTeX comments (a % not preceded by backslash)
     s = s.replace(/(^|[^\\])%.*$/gm, '$1');
     s = s.replace(/\\%/g, '%');
@@ -360,6 +386,7 @@
   let maxFont = 44;
   // Shrink the announcement text until it fits the panel (so nothing is hidden off-screen)
   function fitAnnouncement() {
+    ann.style.setProperty('--fig-max', Math.max(80, ann.clientHeight * 0.85) + 'px');
     let size = maxFont;
     ann.style.fontSize = size + 'px';
     for (let i = 0; i < 40 && ann.scrollHeight > ann.clientHeight + 1 && size > 16; i++) {
@@ -385,6 +412,7 @@
         });
       } catch (e) {}
     }
+    ann.querySelectorAll('img.figure').forEach(im => { im.onload = fitAnnouncement; im.onerror = () => { im.replaceWith('[image not found: ' + im.getAttribute('src') + ']'); fitAnnouncement(); }; });
     fitAnnouncement();
   }
 

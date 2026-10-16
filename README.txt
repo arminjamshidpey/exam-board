@@ -49,6 +49,7 @@ FILES
   exam.txt         the control file (the coordinator edits this)
   demo.txt         a sample control file for trying the page at any
                    hour: open exam-live.html?file=demo.txt
+  tree.svg         the sample picture used by demo.txt
   katex/           math rendering library (leave as is)
   exam-board.html  the stand-alone version: the BACKUP. It needs no
                    server and no internet. If the website is down or
@@ -85,6 +86,9 @@ BEFORE EVERY EXAM: CHECKLIST (proctor or coordinator)
       (e.g. the MS Teams channel for the exam).
   [ ] You know who edits exam.txt during the exam and how to reach
       them.
+  [ ] If using a laptop: plug it in, set Windows to "Do not disturb"
+      so no notification pops up on the projector, and use Win+P ->
+      Duplicate so the projector shows the same screen.
   [ ] During the exam: read every new announcement aloud the first
       time it appears on the screen.
 
@@ -196,6 +200,16 @@ DURING THE EXAM (coordinator)
     \begin{enumerate} ... \end{enumerate}, and % comments.
     Any other command outside math is shown as literal text, so you
     will see it on the screen and can fix the file.
+  - Pictures (trees, graphs, diagrams): put the image file next to
+    exam.txt and write
+        \includegraphics[width=40%]{tree.png}
+    PNG, JPG, GIF, SVG and WebP work; SVG stays sharp at any size.
+    The width is optional (NN%, or 0.5\textwidth), measured across
+    the panel; without it the picture is shown as large as fits. Only
+    a plain file name in the same directory (or a subdirectory) is
+    accepted; a missing file shows "[image not found]" in its place.
+    TikZ or other drawn figures: export them from LaTeX as PDF, then
+    convert to PNG or SVG (e.g. pdftocairo -svg fig.pdf fig.svg).
   - In particular, macros you have defined yourself (\newcommand,
     \def, \DeclareMathOperator in your course or exam files) are
     not available here. Write the formula out in full.
@@ -291,6 +305,11 @@ NOTES
     check that clock when using the backup.
   - Needs a web server (opening the .html by double-click will not
     load exam.txt, browsers block that). Any static host works.
+  - Screen sleep: while the page is visible it asks the browser to keep
+    the display awake, so an untouched PC does not go dark mid-exam.
+    This works in current Edge, Chrome and Firefox. A lock-screen
+    policy enforced by IT on a managed PC can still apply; the dry run
+    in the room will show whether it does.
   - Nothing is stored anywhere; refreshing the page is always safe.
   - Lost connection: the status text turns orange and the last
     received information stays on screen.
