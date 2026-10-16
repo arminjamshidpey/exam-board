@@ -47,6 +47,8 @@ WHAT IT IS
 FILES
   exam-live.html   the display page (open this on the room PC)
   exam.txt         the control file (the coordinator edits this)
+  demo.txt         a sample control file for trying the page at any
+                   hour: open exam-live.html?file=demo.txt
   katex/           math rendering library (leave as is)
   exam-board.html  the stand-alone version: the BACKUP. It needs no
                    server and no internet. If the website is down or

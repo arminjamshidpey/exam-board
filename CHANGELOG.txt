@@ -19,5 +19,6 @@ v0.9 (beta), 2026-10-15
   - End-of-exam message in place of the clock, and a per-room "Papers
     collected" switch that shows the release message.
   - Validation of exam.txt with warnings in the toolbar.
+  - demo.txt, a sample control file for demonstrations.
   - README with setup, checklist, customisation for other
     institutions, and beta/responsibility notice. MIT License.
