@@ -143,6 +143,11 @@ DURING THE EXAM (coordinator)
                              for three hours, a ticking seconds
                              figure draws the eye for no benefit;
                              minutes are enough to plan by.
+  times:      yes            (default) the line "Start 9:00 AM . End
+                             11:30 AM" is shown under the clock
+              no             that line is hidden. The start and end
+                             times still drive everything else; only
+                             the line goes away.
   display:    clock          (default, recommended) big display shows
                              the time of day
               countdown      big display shows the time REMAINING until

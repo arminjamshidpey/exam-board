@@ -471,13 +471,14 @@
     if (end === null && start !== null && dur > 0) end = start + dur;   // "duration: 110" (minutes)
     countdown = /^(countdown|remaining|yes|on|true)$/i.test((c.display || '').trim());
     showSeconds = !/^(no|off|false|hide)$/i.test((c.seconds || '').trim());
+    showTimes   = !/^(no|off|false|hide)$/i.test((c.times || '').trim());
     document.body.classList.toggle('countdown', countdown);
     $('#ampm').style.display = '';
     winHandin = parseWindow(c.handin); winWash = parseWindow(c.washroom);
     const fs = parseInt(c.fontsize, 10);
     maxFont = (fs >= 12 && fs <= 300) ? fs : 44;
     lastAnnouncement = null;   // force re-render so the new size applies
-    $('#times').innerHTML = (start !== null || end !== null)
+    $('#times').innerHTML = (showTimes && (start !== null || end !== null))
       ? 'Start <b>' + fmt(start) + '</b> &nbsp;·&nbsp; End <b>' + fmt(end) + '</b>' : '';
     endMessage = (c.endmessage || '').trim() || 'Time is up. Please remain in your seats until all papers have been collected.';
     releaseMessage = (c.releasemessage || '').trim() || 'All papers have been collected. You may leave now.';
@@ -514,19 +515,21 @@
       if (o && !/^(on|off|yes|no|allowed|not allowed)$/.test(o)) w.push(key + '-override "' + o + '" should be on or off');
     }
     if (countdown && end === null) w.push('display: countdown needs an end time or duration');
-    const sec = (c.seconds || '').trim().toLowerCase();
-    if (sec && !/^(yes|no|on|off|true|false|show|hide)$/.test(sec)) w.push('seconds "' + sec + '" should be yes or no');
+    for (const k of ['seconds', 'times']) {
+      const v = (c[k] || '').trim().toLowerCase();
+      if (v && !/^(yes|no|on|off|true|false|show|hide)$/.test(v)) w.push(k + ' "' + v + '" should be yes or no');
+    }
     for (const k of Object.keys(c)) {
       if (!KNOWN_KEYS.has(k)) w.push('unknown setting "' + k + ':"');
     }
     return w;
   }
   const KNOWN_KEYS = new Set(['course', 'department', 'logo', 'timeserver', 'start', 'end', 'duration', 'display',
-    'handin', 'washroom', 'handin-override', 'washroom-override', 'fontsize', 'endmessage', 'releasemessage', 'date', 'idlemessage', 'seconds', 'instructions', 'announcement']);
+    'handin', 'washroom', 'handin-override', 'washroom-override', 'fontsize', 'endmessage', 'releasemessage', 'date', 'idlemessage', 'seconds', 'times', 'instructions', 'announcement']);
   let configWarnings = [];
 
   // ---------- phase: before the start time, show instructions + "Don't start yet" ----------
-  let beforeStart = null, countdown = false, phase = null, released = false, showSeconds = true;
+  let beforeStart = null, countdown = false, phase = null, released = false, showSeconds = true, showTimes = true;
   function isBeforeStart() {
     if (start === null) return false;
     const d = now();

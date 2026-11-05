@@ -24,6 +24,7 @@ v0.9 (beta), 2026-10-15
   - Pictures in announcements with \includegraphics (PNG, JPG, SVG, ...).
   - date: line and idle screen ("No exam in progress.") outside the exam.
   - seconds: line to show the clock as HH:MM instead of HH:MM:SS.
+  - times: line to hide the "Start ... End ..." line under the clock.
   - Clock drawn in pure white on dark and near-black on light, so it
     stays readable in both themes on a projector.
   - README with setup, checklist, customisation for other

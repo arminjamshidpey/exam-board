@@ -22,6 +22,9 @@ end:       23:59
 # Show seconds on the clock?  yes (default) or no
 seconds:   no
 
+# Show the "Start ... End ..." line under the clock?  yes (default) or no
+times:     no
+
 # What the big display shows once the exam has started:
 #   clock      (default) the time of day
 #   countdown  the time REMAINING until the end, counting down
