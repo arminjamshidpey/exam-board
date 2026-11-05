@@ -80,7 +80,7 @@ BEFORE EVERY EXAM: CHECKLIST (proctor or coordinator)
   [ ] From the back row you can read the red key text and the
       announcement. If not, use the Theme button (light background
       often projects better) or raise fontsize: in exam.txt.
-  [ ] exam.txt has today's course, start, end and windows.
+  [ ] exam.txt has today's course, date, start, end and windows.
   [ ] exam-board.html (the backup) is in the room: on a USB stick,
       or shared in advance through the exam's communication channel
       (e.g. the MS Teams channel for the exam).
@@ -121,10 +121,28 @@ DURING THE EXAM (coordinator)
               Date). If the time server cannot be reached the page
               falls back to the room PC's clock and says so in the
               toolbar ("clock: this PC (time server unreachable)").
+  date:       2026-10-20     the exam date (YYYY-MM-DD). With a date,
+                             the exam board is shown only on that day,
+                             from 60 minutes before the start to 60
+                             minutes after the end. At all other times
+                             the whole screen shows the idle message,
+                             the current date and time, and a line
+                             naming the next exam. Without a date line
+                             the board is shown at all times (as in the
+                             demo). This lets the page stay on a wall
+                             permanently: the coordinator only edits
+                             the file for the next exam.
+  idlemessage: text shown on the idle screen (default: "No exam in
+                             progress.")
   start:      09:00          (24-hour, HH:MM)
   end:        11:30
   duration:   110            length in minutes; use INSTEAD of end:
                              (end = start + duration)
+  seconds:    yes            (default) the clock shows HH:MM:SS
+              no             the clock shows HH:MM only. On a wall
+                             for three hours, a ticking seconds
+                             figure draws the eye for no benefit;
+                             minutes are enough to plan by.
   display:    clock          (default, recommended) big display shows
                              the time of day
               countdown      big display shows the time REMAINING until

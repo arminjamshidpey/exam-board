@@ -15,9 +15,20 @@ course:    MATH 135, Midterm 1
 # hosts this page. Or give the URL of a time service, e.g.
 #   timeserver: https://worldtimeapi.org/api/timezone/Etc/UTC
 timeserver:
+
+# Exam date (YYYY-MM-DD). With a date, the board only shows on that day,
+# from 1 hour before the start to 1 hour after the end; at all other
+# times the screen shows only the idle message below. Without a date,
+# the board shows at all times.
+date:      2026-10-20
+idlemessage: No exam in progress.
+
 start:     09:00
 end:       11:30
 # Instead of "end:" you may give the length in minutes:  duration: 110
+
+# Show seconds on the clock?  yes (default) or no
+seconds:   yes
 
 # What the big display shows once the exam has started:
 #   clock      (default) the time of day

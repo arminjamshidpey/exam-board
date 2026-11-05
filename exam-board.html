@@ -23,6 +23,7 @@
     --off-text: #b7c2cf;
     --key-off: #d92b2b;
     --key-off-text: #ffffff;
+    --clock: #ffffff;
     --accent: #3b82f6;
   }
   :root[data-theme="light"] {
@@ -37,6 +38,7 @@
     --off-text: #475569;
     --key-off: #dc2626;
     --key-off-text: #ffffff;
+    --clock: #0b0f14;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
@@ -135,6 +137,7 @@
     overflow: hidden;
   }
   #clock {
+    color: var(--clock);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.02em;
@@ -345,6 +348,18 @@
     document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text'));
   });
   applyFont();
+
+  // ---------- keep the screen awake ----------
+  // Asks the browser to stop the display from dimming or sleeping while this
+  // tab is visible (Screen Wake Lock API: Edge, Chrome, Firefox 126+). The
+  // lock is released when the tab is hidden, so it is re-requested on return.
+  let wakeLock = null;
+  async function keepAwake() {
+    if (!('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
+    try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) { wakeLock = null; }
+  }
+  document.addEventListener('visibilitychange', keepAwake);
+  keepAwake();
 
   // ---------- theme ----------
   const root = document.documentElement;

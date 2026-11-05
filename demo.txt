@@ -19,6 +19,9 @@ start:     00:01
 end:       23:59
 # Instead of "end:" you may give the length in minutes:  duration: 110
 
+# Show seconds on the clock?  yes (default) or no
+seconds:   no
+
 # What the big display shows once the exam has started:
 #   clock      (default) the time of day
 #   countdown  the time REMAINING until the end, counting down

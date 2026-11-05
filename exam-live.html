@@ -26,6 +26,7 @@
     --off-text: #b7c2cf;
     --key-off: #d92b2b;
     --key-off-text: #ffffff;
+    --clock: #ffffff;
     --warn: #f59e0b;
   }
   :root[data-theme="light"] {
@@ -40,6 +41,7 @@
     --off-text: #475569;
     --key-off: #dc2626;
     --key-off-text: #ffffff;
+    --clock: #0b0f14;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
@@ -120,7 +122,7 @@
     align-items: center; justify-content: center;
     padding: 10px; overflow: hidden;
   }
-  #clock { font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; line-height: 1; white-space: nowrap; }
+  #clock { color: var(--clock); font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; line-height: 1; white-space: nowrap; }
   #ampm { font-weight: 700; letter-spacing: 0.1em; margin-top: 1vh; white-space: nowrap; line-height: 1; }
   #times { color: var(--muted); font-weight: 600; margin-top: 1.2vh; white-space: nowrap; font-variant-numeric: tabular-nums; }
   #times b { color: var(--text); }
@@ -152,6 +154,21 @@
   body.pre #clock, body.pre #ampm { display: none; }
   body.pre #wait { display: block; }
   body.pre #times { margin-top: 3vh; }
+  #idle {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4vh 6vw;
+    gap: 3vh;
+  }
+  #idleMsg { font-weight: 700; font-size: clamp(28px, 6vw, 110px); line-height: 1.15; }
+  #idleClock { color: var(--muted); font-weight: 600; font-size: clamp(18px, 3vw, 56px); font-variant-numeric: tabular-nums; }
+  #idleNext { color: var(--muted); font-size: clamp(14px, 1.6vw, 30px); }
+  body.idle #idle { display: flex; }
+  body.idle #top, body.idle #divider, body.idle #bottom { display: none; }
   #panelTitle { margin-left: 10px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
   #smallClock { font-variant-numeric: tabular-nums; margin-right: 6px; }
 
@@ -178,6 +195,12 @@
 </style>
 </head>
 <body>
+
+<div id="idle">
+  <div id="idleMsg"></div>
+  <div id="idleClock"></div>
+  <div id="idleNext"></div>
+</div>
 
 <div id="top">
   <div id="toolbar">
@@ -331,6 +354,13 @@
     if (h > 23 || mi > 59) return null;
     return h * 60 + mi;
   }
+  function parseDate(s) {            // "2026-10-20" -> "2026-10-20", or null
+    const m = (s || '').trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (!m) return null;
+    const d = new Date(+m[1], +m[2] - 1, +m[3]);
+    if (d.getFullYear() !== +m[1] || d.getMonth() !== +m[2] - 1 || d.getDate() !== +m[3]) return null;
+    return m[1] + '-' + String(+m[2]).padStart(2, '0') + '-' + String(+m[3]).padStart(2, '0');
+  }
   function parseWindow(s) {          // "10:00-11:20" -> [from, to] or null
     const m = (s || '').match(/^\s*(\d{1,2}:\d{2})\s*[-–—to]+\s*(\d{1,2}:\d{2})\s*$/);
     if (!m) return null;
@@ -440,6 +470,7 @@
     const dur = parseInt(c.duration, 10);
     if (end === null && start !== null && dur > 0) end = start + dur;   // "duration: 110" (minutes)
     countdown = /^(countdown|remaining|yes|on|true)$/i.test((c.display || '').trim());
+    showSeconds = !/^(no|off|false|hide)$/i.test((c.seconds || '').trim());
     document.body.classList.toggle('countdown', countdown);
     $('#ampm').style.display = '';
     winHandin = parseWindow(c.handin); winWash = parseWindow(c.washroom);
@@ -450,6 +481,8 @@
       ? 'Start <b>' + fmt(start) + '</b> &nbsp;·&nbsp; End <b>' + fmt(end) + '</b>' : '';
     endMessage = (c.endmessage || '').trim() || 'Time is up. Please remain in your seats until all papers have been collected.';
     releaseMessage = (c.releasemessage || '').trim() || 'All papers have been collected. You may leave now.';
+    examDate = parseDate(c.date);
+    idleMessage = (c.idlemessage || '').trim() || 'No exam in progress.';
     configWarnings = validateConfig(c);
     updatePhase(true);
     updateKeys();
@@ -469,6 +502,8 @@
     if (start !== null && end !== null && end <= start) w.push('end time is not after start time');
     if (start === null && end !== null) w.push('end given but no start');
     if (start !== null && end === null) w.push('start given but no end or duration');
+    if ((c.date || '').trim() !== '' && examDate === null) w.push('date "' + c.date + '" is not YYYY-MM-DD');
+    if (examDate !== null && (start === null || end === null)) w.push('date given but no start/end: the board will never show');
     for (const [key, win] of [['handin', winHandin], ['washroom', winWash]]) {
       const v = (c[key] || '').trim();
       if (v === '') continue;
@@ -479,17 +514,19 @@
       if (o && !/^(on|off|yes|no|allowed|not allowed)$/.test(o)) w.push(key + '-override "' + o + '" should be on or off');
     }
     if (countdown && end === null) w.push('display: countdown needs an end time or duration');
+    const sec = (c.seconds || '').trim().toLowerCase();
+    if (sec && !/^(yes|no|on|off|true|false|show|hide)$/.test(sec)) w.push('seconds "' + sec + '" should be yes or no');
     for (const k of Object.keys(c)) {
       if (!KNOWN_KEYS.has(k)) w.push('unknown setting "' + k + ':"');
     }
     return w;
   }
   const KNOWN_KEYS = new Set(['course', 'department', 'logo', 'timeserver', 'start', 'end', 'duration', 'display',
-    'handin', 'washroom', 'handin-override', 'washroom-override', 'fontsize', 'endmessage', 'releasemessage', 'instructions', 'announcement']);
+    'handin', 'washroom', 'handin-override', 'washroom-override', 'fontsize', 'endmessage', 'releasemessage', 'date', 'idlemessage', 'seconds', 'instructions', 'announcement']);
   let configWarnings = [];
 
   // ---------- phase: before the start time, show instructions + "Don't start yet" ----------
-  let beforeStart = null, countdown = false, phase = null, released = false;
+  let beforeStart = null, countdown = false, phase = null, released = false, showSeconds = true;
   function isBeforeStart() {
     if (start === null) return false;
     const d = now();
@@ -503,7 +540,31 @@
   // Phases: pre (before start) -> running -> ended (after end time) -> released
   // (this room's proctor pressed "Papers collected"; local to this room).
   const notice = $('#notice');
+  // With a date: line, the board is "active" on that day from 60 min before
+  // the start until 60 min after the end; otherwise the idle screen shows.
+  // Without a date: line the board is always active (as before).
+  const ACTIVE_MARGIN = 60;
+  function isActive() {
+    if (examDate === null || start === null || end === null) return true;
+    const d = now();
+    const today = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    if (today !== examDate) return false;
+    const m = d.getHours() * 60 + d.getMinutes();
+    return m >= start - ACTIVE_MARGIN && m < end + ACTIVE_MARGIN;
+  }
+  function fmtDate(iso) {
+    const [y, mo, da] = iso.split('-').map(Number);
+    return new Date(y, mo - 1, da).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  }
   function updatePhase(force) {
+    const active = isActive();
+    document.body.classList.toggle('idle', !active);
+    if (!active) {
+      $('#idleMsg').textContent = idleMessage;
+      $('#idleNext').textContent = examDate ? ((cfg.course ? cfg.course + ': ' : '') + fmtDate(examDate) + ', ' + fmt(start) + ' to ' + fmt(end)) : '';
+      if (phase !== 'idle') { phase = 'idle'; released = false; }
+      return;
+    }
     const b = isBeforeStart(), e = !b && isEnded();
     if (!e) released = false;                       // a new end time re-arms the switch
     const ph = b ? 'pre' : released ? 'released' : e ? 'ended' : 'running';
@@ -519,7 +580,7 @@
     fitClock();
   }
   $('#collectBtn').onclick = () => { if (phase === 'ended' || phase === 'released') { released = !released; updatePhase(true); } };
-  let endMessage = '', releaseMessage = '';
+  let endMessage = '', releaseMessage = '', examDate = null, idleMessage = '';
 
   function decide(win, override) {
     const o = (override || '').trim().toLowerCase();
@@ -584,6 +645,7 @@
     ampm.textContent = h >= 12 ? 'PM' : 'AM';
     h = h % 12 || 12;
     $('#smallClock').textContent = h + ':' + pad(d.getMinutes()) + ' ' + ampm.textContent;
+    if (phase === 'idle') $('#idleClock').textContent = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) + ' · ' + h + ':' + pad(d.getMinutes()) + ' ' + ampm.textContent;
     if (countdown && end !== null && !beforeStart) {
       // remaining time until the end, counted with the same (server) clock
       const endMs = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(end / 60), end % 60, 0).getTime();
@@ -592,7 +654,7 @@
       clock.textContent = (hh ? hh + ':' + pad(mm) : String(mm)) + ':' + pad(ss);
       ampm.textContent = left > 0 ? 'remaining' : 'TIME IS UP';
     } else {
-      clock.textContent = h + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+      clock.textContent = h + ':' + pad(d.getMinutes()) + (showSeconds ? ':' + pad(d.getSeconds()) : '');
     }
     if (d.getMinutes() !== lastMinute) { lastMinute = d.getMinutes(); updateKeys(); updatePhase(); }
   }
@@ -618,7 +680,7 @@
       return;
     }
     let share = 1 - 0.22 - (hasTimes ? 0.14 : 0);
-    let size = Math.min(w / (8 * 0.60), hgt * share * 0.95);
+    let size = Math.min(w / ((showSeconds ? 8 : 5) * 0.60), hgt * share * 0.95);
     const apply = () => {
       clock.style.fontSize = size + 'px';
       ampm.style.fontSize = (size * 0.22) + 'px';

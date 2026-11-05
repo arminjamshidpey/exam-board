@@ -22,5 +22,9 @@ v0.9 (beta), 2026-10-15
   - demo.txt, a sample control file for demonstrations.
   - Both pages keep the display awake while visible (screen wake lock).
   - Pictures in announcements with \includegraphics (PNG, JPG, SVG, ...).
+  - date: line and idle screen ("No exam in progress.") outside the exam.
+  - seconds: line to show the clock as HH:MM instead of HH:MM:SS.
+  - Clock drawn in pure white on dark and near-black on light, so it
+    stays readable in both themes on a projector.
   - README with setup, checklist, customisation for other
     institutions, and beta/responsibility notice. MIT License.
