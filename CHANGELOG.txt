@@ -21,6 +21,9 @@ v0.9 (beta), 2026-10-15
   - Validation of exam.txt with warnings in the toolbar.
   - demo.txt, a sample control file for demonstrations.
   - Both pages keep the display awake while visible (screen wake lock).
+  - Stand-alone can optionally read the announcements from a control
+    file on a server (address in the gear menu), with KaTeX loaded from
+    beside it, while the clock and keys stay controlled in the room.
   - Pictures in announcements with \includegraphics (PNG, JPG, SVG, ...).
   - date: line and idle screen ("No exam in progress.") outside the exam.
   - seconds: line to show the clock as HH:MM instead of HH:MM:SS.

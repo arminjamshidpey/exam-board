@@ -24,6 +24,7 @@
     --key-off: #d92b2b;
     --key-off-text: #ffffff;
     --clock: #ffffff;
+    --warn: #f59e0b;
     --accent: #3b82f6;
   }
   :root[data-theme="light"] {
@@ -39,6 +40,7 @@
     --key-off: #dc2626;
     --key-off-text: #ffffff;
     --clock: #0b0f14;
+    --warn: #b45309;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
@@ -221,13 +223,27 @@
     flex-direction: column;
     gap: 10px;
     z-index: 10;
-    min-width: 230px;
+    min-width: 300px;
     box-shadow: 0 10px 30px rgba(0,0,0,.35);
     font-size: 14px;
   }
   #settings.open { display: flex; }
   #settings label { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
   #settings input[type=text] { width: 120px; font-family: inherit; font-size: 13px; padding: 4px 6px; border-radius: 5px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+  #srvStatus { color: var(--muted); font-size: 13px; max-width: 30vw; overflow: hidden;
+               text-overflow: ellipsis; white-space: nowrap; }
+  #srvStatus.warn { color: var(--warn); font-weight: 600; }
+  #srvStatus:empty { display: none; }
+  #message.remote { cursor: default; }
+  #message p { margin: 0 0 .5em; }
+  #message ul, #message ol { margin: .2em 0 .5em; padding-left: 1.3em; }
+  #message .katex-display { margin: .3em 0 .5em; }
+  #message img.figure { display: block; margin: .3em auto; max-width: 100%; max-height: var(--fig-max, 40vh); object-fit: contain; }
+  :root:not([data-theme="light"]) #message img.figure { background: #fff; border-radius: 6px; padding: 4px; }
+  #settings .wide { flex-direction: column; align-items: stretch; gap: 4px; }
+  #settings .wide input[type=text] { width: 100%; }
+  #settings select { font-family: inherit; font-size: 13px; padding: 3px 6px; border-radius: 5px;
+                     border: 1px solid var(--line); background: var(--bg); color: var(--text); }
   #settings h4 { margin: 4px 0 0; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
 </style>
 </head>
@@ -245,6 +261,7 @@
     <button id="undoBtn" title="Undo (Ctrl + Z)" disabled>Undo</button>
     <span class="label">Keys: press 1 / 2 &nbsp;·&nbsp; F11 = full screen</span>
     <span class="spacer"></span>
+    <span id="srvStatus"></span>
     <button id="themeBtn" title="Switch light / dark">Theme</button>
     <button id="fullBtn" title="Full screen (F11)">Full screen</button>
     <button id="settingsBtn" title="Settings">⚙</button>
@@ -269,6 +286,15 @@
 </div>
 
 <div id="settings">
+  <h4>Announcements from a server</h4>
+  <label class="wide">
+    <span style="color:var(--muted)">Control file address (blank = local)</span>
+    <input type="text" id="optUrl" placeholder="https://.../examboard/exam.txt" spellcheck="false">
+  </label>
+  <label>Show <select id="optBlock">
+    <option value="announcement">Announcements</option>
+    <option value="instructions">Instructions</option>
+  </select></label>
   <h4>Header</h4>
   <label>Department <input type="text" id="optDept"></label>
   <h4>Clock</h4>
@@ -325,7 +351,7 @@
     const r = document.createRange(); r.selectNodeContents(msg); r.collapse(false);
     const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
   }
-  msg.textContent = lastSnapshot;
+  if (!store.get('srvUrl', '')) msg.textContent = lastSnapshot;
   msg.addEventListener('input', () => {
     if (!typingTimer) pushHistory();
     clearTimeout(typingTimer);
@@ -438,6 +464,180 @@
     if (e.key === 'f' || e.key === 'F') toggleFull();
     if (e.key === 'Escape') settings.classList.remove('open');
   });
+
+
+  // ================= announcements from a server (optional) =================
+  // When a control file address is set in the gear menu, the message area shows
+  // the chosen block of that file instead of what was typed here, re-read every
+  // five seconds. The clock, the keys and every label stay local to this room.
+  // With no address, nothing below runs and the page is entirely stand-alone.
+  const srvEl = $('#srvStatus'), urlIn = $('#optUrl'), blockIn = $('#optBlock');
+  let srvUrl = store.get('srvUrl', ''), srvBlock = store.get('srvBlock', 'announcement');
+  let srvTimer = null, srvLastText = null, srvShown = null, katexState = 0;   // 0 none, 1 loading, 2 ready
+
+  function baseOf(u) { return u.replace(/[?#].*$/, '').replace(/[^\/]*$/, ''); }
+
+  function loadKatex(base) {
+    if (katexState) return;
+    katexState = 1;
+    const css = document.createElement('link');
+    css.rel = 'stylesheet'; css.href = base + 'katex/katex.min.css';
+    document.head.appendChild(css);
+    const a = document.createElement('script');
+    a.src = base + 'katex/katex.min.js';
+    a.onload = () => {
+      const b = document.createElement('script');
+      b.src = base + 'katex/auto-render.min.js';
+      b.onload = () => { katexState = 2; srvShown = null; showRemote(); };
+      b.onerror = () => { katexState = 0; };
+      document.head.appendChild(b);
+    };
+    a.onerror = () => { katexState = 0; };   // no KaTeX: the text still shows, unrendered
+    document.head.appendChild(a);
+  }
+
+  // "key: value" lines, then the two LaTeX blocks
+  function parseControl(text) {
+    const cfg = { announcement: '', instructions: '' };
+    let block = null;
+    for (const line of text.replace(/\r/g, '').split('\n')) {
+      const h = line.match(/^\s*(instructions|announcement)\s*:\s*$/i);
+      if (h) { block = h[1].toLowerCase(); continue; }
+      if (block) { cfg[block] += line + '\n'; continue; }
+      if (/^\s*#/.test(line) || /^\s*$/.test(line)) continue;
+      const m = line.match(/^\s*([A-Za-z][\w-]*)\s*:\s*(.*)$/);
+      if (m) cfg[m[1].toLowerCase()] = m[2].trim();
+    }
+    return cfg;
+  }
+
+  function escapeHtml(t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function latexToHtml(src, base) {
+    const keep = [];
+    let t = src.replace(/\\\[[\s\S]*?\\\]|\$\$[\s\S]*?\$\$|\\\([\s\S]*?\\\)|\$[^$\n]+?\$/g,
+                        m => { keep.push(m); return '\u0000' + (keep.length - 1) + '\u0000'; });
+    t = t.replace(/\\includegraphics(?:\[([^\]]*)\])?\{([^{}]*)\}/g, (m, opts, file) => {
+      file = file.trim();
+      if (!/^[\w.-]+(?:\/[\w.-]+)*\.(png|jpe?g|gif|svg|webp)$/i.test(file) || file.includes('..'))
+        return '[image: ' + file + ']';
+      let w = '';
+      const pm = /width\s*=\s*([\d.]+)\s*(%|\\(?:text|line)width)?/.exec(opts || '');
+      if (pm) { const v = parseFloat(pm[1]); w = ' style="width:' + (pm[2] === '%' ? v : v * 100) + '%"'; }
+      keep.push('<img class="figure" src="' + base + file + '" alt=""' + w + '>');
+      return '\u0000' + (keep.length - 1) + '\u0000';
+    });
+    t = escapeHtml(t);
+    t = t.replace(/(^|[^\\])%.*$/gm, '$1').replace(/\\%/g, '%');
+    t = t.replace(/\\begin\{itemize\}/g, '<ul>').replace(/\\end\{itemize\}/g, '</ul>');
+    t = t.replace(/\\begin\{enumerate\}/g, '<ol>').replace(/\\end\{enumerate\}/g, '</ol>');
+    t = t.replace(/\\item\s*/g, '<li>');
+    t = t.replace(/\\textbf\{([^{}]*)\}/g, '<b>$1</b>');
+    t = t.replace(/\\emph\{([^{}]*)\}/g, '<i>$1</i>');
+    t = t.replace(/\\textit\{([^{}]*)\}/g, '<i>$1</i>');
+    t = t.replace(/\\underline\{([^{}]*)\}/g, '<u>$1</u>');
+    t = t.replace(/\\section\*?\{([^{}]*)\}/g, '<b>$1</b><br>');
+    t = t.replace(/\\\\/g, '<br>').replace(/\\noindent|\\par\b/g, '');
+    t = t.split(/\n\s*\n/).map(x => x.trim()).filter(Boolean)
+         .map(x => '<p>' + x.replace(/\n/g, ' ') + '</p>').join('');
+    return t.replace(/\u0000(\d+)\u0000/g, (_, i) => keep[+i]);
+  }
+
+  // The panel cannot be scrolled on a projector, so the typed size acts as a
+  // maximum and the text shrinks until all of it fits.
+  function fitRemote() {
+    if (!srvUrl) return;
+    let fig = Math.max(70, msg.clientHeight * 0.58);
+    msg.style.setProperty('--fig-max', fig + 'px');
+    let size = fontSize;
+    msg.style.fontSize = size + 'px';
+    const over = () => msg.scrollHeight > msg.clientHeight + 1;
+    for (let i = 0; i < 40 && over() && size > 15; i++) {
+      size = Math.max(15, size * 0.92);
+      msg.style.fontSize = size + 'px';
+    }
+    // text has a floor below which nobody can read it; a picture does not
+    for (let i = 0; i < 25 && over() && fig > 50; i++) {
+      fig = Math.max(50, fig * 0.88);
+      msg.style.setProperty('--fig-max', fig + 'px');
+    }
+  }
+
+  function showRemote() {
+    if (srvLastText === null) return;
+    const cfg = parseControl(srvLastText);
+    const text = (cfg[srvBlock] || '').trim();
+    if (text === srvShown) return;
+    srvShown = text;
+    msg.innerHTML = text ? latexToHtml(text, baseOf(srvUrl))
+                         : '<span style="color:var(--muted)">No ' + srvBlock + ' in the file.</span>';
+    if (katexState === 2 && window.renderMathInElement) {
+      try {
+        renderMathInElement(msg, { delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '\\[', right: '\\]', display: true },
+          { left: '\\(', right: '\\)', display: false },
+          { left: '$', right: '$', display: false } ], throwOnError: false });
+      } catch (e) {}
+    }
+    fitRemote();
+  }
+
+  async function srvPoll() {
+    if (!srvUrl) return;
+    try {
+      const u = srvUrl + (srvUrl.includes('?') ? '&' : '?') + '_=' + Date.now();
+      const r = await fetch(u, { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const text = await r.text();
+      if (text !== srvLastText) { srvLastText = text; showRemote(); }
+      srvEl.classList.remove('warn');
+      srvEl.textContent = 'announcements: server, ' +
+        new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      srvEl.title = srvUrl;
+    } catch (e) {
+      srvEl.classList.add('warn');
+      srvEl.textContent = (srvLastText === null ? 'Cannot read ' : 'Lost contact with ')
+        + 'the control file: ' + e.message;
+      srvEl.title = srvUrl + ' — ' + e.message;
+    }
+  }
+
+  function setServer(url) {
+    url = (url || '').trim();
+    if (url && !/^https?:\/\//i.test(url) && !/^[\w.-]+\.txt$/i.test(url)) url = '';   // ignore nonsense
+    const was = srvUrl;
+    srvUrl = url; store.set('srvUrl', srvUrl);
+    if (srvTimer) { clearInterval(srvTimer); srvTimer = null; }
+    if (srvUrl) {
+      msg.setAttribute('contenteditable', 'false');
+      msg.classList.add('remote');
+      $('#clearBtn').disabled = true; undoBtn.disabled = true;
+      srvLastText = null; srvShown = null;
+      srvEl.textContent = 'announcements: connecting...';
+      srvEl.classList.remove('warn');
+      loadKatex(baseOf(srvUrl));
+      srvPoll(); srvTimer = setInterval(srvPoll, 5000);
+    } else {
+      msg.setAttribute('contenteditable', 'true');
+      msg.classList.remove('remote');
+      $('#clearBtn').disabled = false;
+      srvEl.textContent = ''; srvEl.title = '';
+      msg.style.fontSize = fontSize + 'px';
+      if (was) { msg.innerHTML = ''; msg.textContent = store.get('message', ''); lastSnapshot = msg.textContent; }
+      undoBtn.disabled = history.length === 0;
+    }
+  }
+  const _fup = $('#fontUp').onclick, _fdn = $('#fontDown').onclick;
+  $('#fontUp').onclick = () => { _fup(); fitRemote(); };
+  $('#fontDown').onclick = () => { _fdn(); fitRemote(); };
+  window.addEventListener('resize', fitRemote);
+  new ResizeObserver(fitRemote).observe(msg);
+
+  urlIn.value = srvUrl;
+  blockIn.value = srvBlock;
+  urlIn.onchange = (e) => setServer(e.target.value);
+  blockIn.onchange = (e) => { srvBlock = e.target.value; store.set('srvBlock', srvBlock); srvShown = null; showRemote(); };
+  if (srvUrl) setServer(srvUrl);
 
   // ---------- clock ----------
   const clock = $('#clock'), ampm = $('#ampm'), dateEl = $('#date'), pane = $('#clockPane');

@@ -263,6 +263,50 @@ STAND-ALONE VERSION (BACKUP): exam-board.html
         Washroom\\(need to wait for a Proctor):
   - Settings and the last message are remembered on that PC.
 
+  ANNOUNCEMENTS FROM THE SERVER (optional)
+  The gear menu has a field "Control file address". Leave it empty and
+  the page is entirely local, as above. Put the address of a control
+  file in it, for example
+      https://your.site/course/examboard/exam.txt
+  and the message area instead shows that file's announcements, re-read
+  every 5 seconds, with LaTeX typeset. The rule is:
+
+      the words come from the server, the rules come from the room.
+
+  Only the announcement (or instructions, chosen in the same menu) is
+  taken from the file. The clock, the keys, the labels and the theme
+  all stay under the control of whoever is in the room. This is for a
+  proctor who wants the coordinator's corrections but their own
+  washroom and hand-in decisions, or their own end time.
+
+  While an address is set the message area is read-only, the toolbar
+  shows "announcements: server" and the time of the last successful
+  read, and Clear and Undo are greyed out. Clear the field and the
+  page returns to local, with whatever was typed before still there.
+  If the file cannot be read the last text stays on the screen and the
+  toolbar turns orange; nothing else on the page is affected.
+
+  Mathematics is rendered by KaTeX, loaded from a katex/ directory
+  beside the control file, so the same address gives you both. If it
+  is not there the text still appears, with the LaTeX unrendered.
+
+  ONE LIMITATION, worth knowing before you rely on it. A page opened
+  by double-clicking the file (an address starting file://) is not
+  allowed by the browser to read an https:// address, wherever the
+  file is kept; copying it from a USB stick to the PC does not change
+  this. Two ways round it:
+    - open the page from the website instead, e.g.
+      https://your.site/course/examboard/exam-board.html
+      Then the page and the control file are on the same site and
+      nothing needs configuring. This is the normal case.
+    - or have the server send the header
+          Access-Control-Allow-Origin: *
+      for that directory (one line of .htaccess on Apache), after
+      which the USB copy can read it too. The file is already public,
+      so this only says that other pages' scripts may read it.
+  Note that when the network is down, which is when the USB copy
+  matters most, there is no server to read from anyway.
+
 USING IT AT ANOTHER UNIVERSITY OR DEPARTMENT
   Nothing is hard-wired to Waterloo. To make it yours:
   1. Logo: put your institution's logo in this directory as logo.png
