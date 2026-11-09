@@ -19,6 +19,9 @@ start:     00:01
 end:       23:59
 # Instead of "end:" you may give the length in minutes:  duration: 110
 
+# Clock format: 12 (default, "9:05 AM") or 24 ("09:05")
+hours:     24
+
 # Show seconds on the clock?  yes (default) or no
 seconds:   no
 
