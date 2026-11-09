@@ -472,7 +472,15 @@
   // five seconds. The clock, the keys and every label stay local to this room.
   // With no address, nothing below runs and the page is entirely stand-alone.
   const srvEl = $('#srvStatus'), urlIn = $('#optUrl'), blockIn = $('#optBlock');
-  let srvUrl = store.get('srvUrl', ''), srvBlock = store.get('srvBlock', 'announcement');
+  // ?src=exam.txt in the link points this room at a control file without
+  // anyone typing an address; ?show=instructions picks the block. The gear
+  // menu still works, and a proctor who clears the field there wins for the
+  // rest of that visit.
+  const srvParams = new URLSearchParams(location.search);
+  const srvFromLink = (srvParams.get('src') || '').trim();
+  let srvUrl = srvFromLink || store.get('srvUrl', '');
+  let srvBlock = (srvParams.get('show') || '').trim().toLowerCase() === 'instructions'
+               ? 'instructions' : store.get('srvBlock', 'announcement');
   let srvTimer = null, srvLastText = null, srvShown = null, katexState = 0;   // 0 none, 1 loading, 2 ready
 
   function baseOf(u) { return u.replace(/[?#].*$/, '').replace(/[^\/]*$/, ''); }
@@ -604,7 +612,11 @@
 
   function setServer(url) {
     url = (url || '').trim();
-    if (url && !/^https?:\/\//i.test(url) && !/^[\w.-]+\.txt$/i.test(url)) url = '';   // ignore nonsense
+    if (url) {
+      try { url = new URL(url, location.href).href; }                 // a bare name works
+      catch (e) { url = ''; }
+      if (!/^https?:/i.test(url)) url = '';                           // no file:// or stranger schemes
+    }
     const was = srvUrl;
     srvUrl = url; store.set('srvUrl', srvUrl);
     if (srvTimer) { clearInterval(srvTimer); srvTimer = null; }

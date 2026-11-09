@@ -454,8 +454,8 @@
   function fmt(min) {
     if (min === null) return '?';
     const h = Math.floor(min / 60), m = min % 60;
-    const h12 = h % 12 || 12;
-    return h12 + ':' + String(m).padStart(2, '0') + (h >= 12 ? ' PM' : ' AM');
+    if (h24) return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+    return (h % 12 || 12) + ':' + String(m).padStart(2, '0') + (h >= 12 ? ' PM' : ' AM');
   }
   function fmtWindow(w) { return w ? (fmt(w[0]) + ' – ' + fmt(w[1])) : ''; }
 
@@ -472,6 +472,7 @@
     countdown = /^(countdown|remaining|yes|on|true)$/i.test((c.display || '').trim());
     showSeconds = !/^(no|off|false|hide)$/i.test((c.seconds || '').trim());
     showTimes   = !/^(no|off|false|hide)$/i.test((c.times || '').trim());
+    h24         = /^(24|24h|24-hour)$/i.test((c.hours || '').trim());
     document.body.classList.toggle('countdown', countdown);
     $('#ampm').style.display = '';
     winHandin = parseWindow(c.handin); winWash = parseWindow(c.washroom);
@@ -519,17 +520,19 @@
       const v = (c[k] || '').trim().toLowerCase();
       if (v && !/^(yes|no|on|off|true|false|show|hide)$/.test(v)) w.push(k + ' "' + v + '" should be yes or no');
     }
+    const hv = (c.hours || '').trim().toLowerCase();
+    if (hv && !/^(12|24|12h|24h|12-hour|24-hour)$/.test(hv)) w.push('hours "' + hv + '" should be 12 or 24');
     for (const k of Object.keys(c)) {
       if (!KNOWN_KEYS.has(k)) w.push('unknown setting "' + k + ':"');
     }
     return w;
   }
   const KNOWN_KEYS = new Set(['course', 'department', 'logo', 'timeserver', 'start', 'end', 'duration', 'display',
-    'handin', 'washroom', 'handin-override', 'washroom-override', 'fontsize', 'endmessage', 'releasemessage', 'date', 'idlemessage', 'seconds', 'times', 'instructions', 'announcement']);
+    'handin', 'washroom', 'handin-override', 'washroom-override', 'fontsize', 'endmessage', 'releasemessage', 'date', 'idlemessage', 'seconds', 'times', 'hours', 'instructions', 'announcement']);
   let configWarnings = [];
 
   // ---------- phase: before the start time, show instructions + "Don't start yet" ----------
-  let beforeStart = null, countdown = false, phase = null, released = false, showSeconds = true, showTimes = true;
+  let beforeStart = null, countdown = false, phase = null, released = false, showSeconds = true, showTimes = true, h24 = false;
   function isBeforeStart() {
     if (start === null) return false;
     const d = now();
@@ -644,11 +647,15 @@
   let lastMinute = -1;
   function tick() {
     const d = now();
-    let h = d.getHours();
-    ampm.textContent = h >= 12 ? 'PM' : 'AM';
-    h = h % 12 || 12;
-    $('#smallClock').textContent = h + ':' + pad(d.getMinutes()) + ' ' + ampm.textContent;
-    if (phase === 'idle') $('#idleClock').textContent = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) + ' · ' + h + ':' + pad(d.getMinutes()) + ' ' + ampm.textContent;
+    const raw = d.getHours();
+    const suffix = h24 ? '' : (raw >= 12 ? 'PM' : 'AM');
+    const h = h24 ? pad(raw) : (raw % 12 || 12);
+    ampm.textContent = suffix;
+    // in 24-hour time there is no AM/PM line, unless the countdown uses it below
+    ampm.style.display = (h24 && !countdown) ? 'none' : '';
+    const short = h + ':' + pad(d.getMinutes()) + (suffix ? ' ' + suffix : '');
+    $('#smallClock').textContent = short;
+    if (phase === 'idle') $('#idleClock').textContent = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) + ' · ' + short;
     if (countdown && end !== null && !beforeStart) {
       // remaining time until the end, counted with the same (server) clock
       const endMs = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(end / 60), end % 60, 0).getTime();
@@ -682,7 +689,7 @@
       for (let i = 0; i < 4 && wait.scrollWidth > w; i++) { size *= w / wait.scrollWidth * 0.98; wait.style.fontSize = size + 'px'; }
       return;
     }
-    let share = 1 - 0.22 - (hasTimes ? 0.14 : 0);
+    let share = 1 - ((h24 && !countdown) ? 0 : 0.22) - (hasTimes ? 0.14 : 0);
     let size = Math.min(w / ((showSeconds ? 8 : 5) * 0.60), hgt * share * 0.95);
     const apply = () => {
       clock.style.fontSize = size + 'px';

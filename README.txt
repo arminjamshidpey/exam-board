@@ -138,6 +138,10 @@ DURING THE EXAM (coordinator)
   end:        11:30
   duration:   110            length in minutes; use INSTEAD of end:
                              (end = start + duration)
+  hours:      12             (default) the clock reads 9:05 AM
+              24             the clock reads 09:05 and the AM/PM line
+                             disappears, giving the digits more room.
+                             Start/End and the idle screen follow it.
   seconds:    yes            (default) the clock shows HH:MM:SS
               no             the clock shows HH:MM only. On a wall
                              for three hours, a ticking seconds
@@ -286,6 +290,17 @@ STAND-ALONE VERSION (BACKUP): exam-board.html
   If the file cannot be read the last text stays on the screen and the
   toolbar turns orange; nothing else on the page is affected.
 
+  SETTING IT FROM THE LINK. Rather than have each proctor type the
+  address, put it in the link and circulate that one link to every
+  room:
+      .../exam-board.html?src=exam.txt
+      .../exam-board.html?src=exam.txt&show=instructions
+  A bare file name is taken as being beside the page, or give a full
+  https:// address. The room opens the link and the board is already
+  reading the right file; the gear menu still works for anyone who
+  wants to point it elsewhere or clear it. This removes the typing
+  and the typing mistakes when five rooms are being set up at once.
+
   Mathematics is rendered by KaTeX, loaded from a katex/ directory
   beside the control file, so the same address gives you both. If it
   is not there the text still appears, with the LaTeX unrendered.
@@ -329,10 +344,8 @@ USING IT AT ANOTHER UNIVERSITY OR DEPARTMENT
      words Allowed / Not allowed are in the function setKey(). In
      exam-board.html the labels are in the gear menu; the Allowed /
      Not allowed words are in setKey() as well.
-  4. Clock format: exam-live.html shows 12-hour time; for 24-hour,
-     in function tick() remove the two lines that set ampm and
-     h = h % 12 || 12. The stand-alone version has a 24-hour switch
-     in the gear menu.
+  4. Clock format: put  hours: 24  in exam.txt for the live version.
+     The stand-alone version has a 24-hour switch in the gear menu.
   5. Language: all visible English strings are in the two .html
      files as plain text; nothing is generated, so a find-and-replace
      is enough to translate it.

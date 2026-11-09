@@ -24,10 +24,13 @@ v0.9 (beta), 2026-10-15
   - Stand-alone can optionally read the announcements from a control
     file on a server (address in the gear menu), with KaTeX loaded from
     beside it, while the clock and keys stay controlled in the room.
+    ?src= in the link sets that address, so one link can be sent to
+    every room instead of each proctor typing it.
   - Pictures in announcements with \includegraphics (PNG, JPG, SVG, ...).
   - date: line and idle screen ("No exam in progress.") outside the exam.
   - seconds: line to show the clock as HH:MM instead of HH:MM:SS.
   - times: line to hide the "Start ... End ..." line under the clock.
+  - hours: line to choose a 12- or 24-hour clock.
   - Clock drawn in pure white on dark and near-black on light, so it
     stays readable in both themes on a projector.
   - README with setup, checklist, customisation for other
