@@ -28,6 +28,10 @@ v1.0, 2026-11-09
   - Fixed: making the clock brighter had made its digits invisible in
     the light theme.
 
+v1.0.1, 2026-11-09
+  - layout: line (and a chooser in the stand-alone's gear menu) to put
+    the clock and keys above the announcements instead of below.
+
 v0.9 (beta), 2026-10-15
   First version shown to colleagues.
   - Stand-alone exam-board.html: large clock, free-text announcements

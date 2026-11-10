@@ -27,6 +27,9 @@ start:     09:00
 end:       11:30
 # Instead of "end:" you may give the length in minutes:  duration: 110
 
+# Which half is on top: announcements-top (default) or clock-top
+layout:    announcements-top
+
 # Which keys to show: both (default), washroom, handin, none
 keys:      both
 

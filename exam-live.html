@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Exam Board Live v1.0
+  Exam Board Live v1.0.1
   Designed by Armin Jamshidpey (code written with the assistance of a generative AI tool).
   Copyright (c) 2026 Armin Jamshidpey. Released under the MIT License (see LICENSE).
   Exam-room display driven by a control text file (see README.txt).
@@ -9,7 +9,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Exam Board Live v1.0</title>
+<title>Exam Board Live v1.0.1</title>
 <link rel="stylesheet" href="katex/katex.min.css">
 <script defer src="katex/katex.min.js"></script>
 <script defer src="katex/auto-render.min.js"></script>
@@ -148,6 +148,9 @@
   body.released #notice { color: var(--on); }
   body.released #keysPane, body.nokeys #keysPane { display: none; }
   body.released #clockPane, body.nokeys #clockPane { width: 100%; }
+  /* layout: clock-top puts the clock and keys above the announcements */
+  body.clocktop { flex-direction: column-reverse; }
+  body.clocktop #top { border-bottom: 0; border-top: 2px solid var(--line); }
   body.onekey #keyWashroom, body.onekey #keyHandin { display: none; }
   body.onekey.washroom #keyWashroom, body.onekey.handin #keyHandin { display: flex; }
   #collectBtn { display: none; }
@@ -484,6 +487,8 @@
     showTimes   = !/^(no|off|false|hide)$/i.test((c.times || '').trim());
     h24         = /^(24|24h|24-hour)$/i.test((c.hours || '').trim());
     // keys: both (default) | none | washroom | handin
+    clockTop = /^clock-?top$/i.test((c.layout || '').trim());
+    document.body.classList.toggle('clocktop', clockTop);
     const kw = (c.keys || '').trim().toLowerCase() || 'both';
     document.body.classList.toggle('nokeys', kw === 'none' || kw === 'no');
     document.body.classList.toggle('onekey', kw === 'washroom' || kw === 'handin');
@@ -538,6 +543,9 @@
     }
     const hv = (c.hours || '').trim().toLowerCase();
     if (hv && !/^(12|24|12h|24h|12-hour|24-hour)$/.test(hv)) w.push('hours "' + hv + '" should be 12 or 24');
+    const lv = (c.layout || '').trim().toLowerCase();
+    if (lv && !/^(announcements?-?top|clock-?top)$/.test(lv))
+      w.push('layout "' + lv + '" should be announcements-top or clock-top');
     const kv = (c.keys || '').trim().toLowerCase();
     if (kv && !/^(both|none|no|washroom|handin|hand-in)$/.test(kv))
       w.push('keys "' + kv + '" should be both, none, washroom or handin');
@@ -547,11 +555,11 @@
     return w;
   }
   const KNOWN_KEYS = new Set(['course', 'department', 'logo', 'timeserver', 'start', 'end', 'duration', 'display',
-    'handin', 'washroom', 'handin-override', 'washroom-override', 'fontsize', 'endmessage', 'releasemessage', 'date', 'idlemessage', 'seconds', 'times', 'hours', 'keys', 'instructions', 'announcement']);
+    'handin', 'washroom', 'handin-override', 'washroom-override', 'fontsize', 'endmessage', 'releasemessage', 'date', 'idlemessage', 'seconds', 'times', 'hours', 'keys', 'layout', 'instructions', 'announcement']);
   let configWarnings = [];
 
   // ---------- phase: before the start time, show instructions + "Don't start yet" ----------
-  let beforeStart = null, countdown = false, phase = null, released = false, showSeconds = true, showTimes = true, h24 = false;
+  let beforeStart = null, countdown = false, phase = null, released = false, showSeconds = true, showTimes = true, h24 = false, clockTop = false;
   function isBeforeStart() {
     if (start === null) return false;
     const d = now();
@@ -731,7 +739,9 @@
   divider.addEventListener('mousedown', (e) => { dragging = true; e.preventDefault(); });
   document.addEventListener('mousemove', (e) => {
     if (!dragging) return;
-    const pct = Math.max(12, Math.min(70, e.clientY / window.innerHeight * 100));
+    let raw = e.clientY / window.innerHeight * 100;
+    if (clockTop) raw = 100 - raw;                 // the announcements are underneath
+    const pct = Math.max(12, Math.min(70, raw));
     top.style.height = pct + '%';
     fitClock();
   });

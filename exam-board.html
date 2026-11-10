@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Exam Board v1.0
+  Exam Board v1.0.1
   Designed by Armin Jamshidpey (code written with the assistance of a generative AI tool).
   Copyright (c) 2026 Armin Jamshidpey. Released under the MIT License (see LICENSE).
   Stand-alone exam-room display; no server or internet needed.
@@ -9,7 +9,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Exam Board v1.0</title>
+<title>Exam Board v1.0.1</title>
 <style>
   :root {
     --bg: #0b0f14;
@@ -162,6 +162,9 @@
 
   body.nokeys #keysPane { display: none; }
   body.nokeys #clockPane { width: 100%; }
+  /* the clock and keys can sit above the announcements instead */
+  body.clocktop { flex-direction: column-reverse; }
+  body.clocktop #top { border-bottom: 0; border-top: 2px solid var(--line); }
   body.onekey .key { display: none; }
   body.onekey.washroom .key[data-key="1"], body.onekey.handin .key[data-key="2"] { display: flex; }
   #keysPane {
@@ -305,16 +308,21 @@
   <label>24-hour <input type="checkbox" id="opt24"></label>
   <label>Show seconds <input type="checkbox" id="optSec" checked></label>
   <label>Show date <input type="checkbox" id="optDate" checked></label>
+  <h4>Layout</h4>
+  <label>Order <select id="optLayout">
+    <option value="announcements-top">Announcements on top</option>
+    <option value="clock-top">Clock on top</option>
+  </select></label>
   <h4>Keys</h4>
   <label>Show <select id="optKeys">
     <option value="both">Both</option>
-    <option value="washroom">Washroom only</option>
-    <option value="handin">Hand-in only</option>
+    <option value="washroom">Top key only</option>
+    <option value="handin">Bottom key only</option>
     <option value="none">None</option>
   </select></label>
   <h4>Key labels &nbsp;<span style="font-weight:400;text-transform:none;letter-spacing:0">(use \\ for a second line)</span></h4>
-  <label>Key 1 <input type="text" id="lbl1"></label>
-  <label>Key 2 <input type="text" id="lbl2"></label>
+  <label>Top key <input type="text" id="lbl1"></label>
+  <label>Bottom key <input type="text" id="lbl2"></label>
   <!-- <label>Key 3 <input type="text" id="lbl3"></label> -->
   <label>Reset keys to OFF on start <input type="checkbox" id="optResetKeys" checked></label>
 </div>
@@ -458,6 +466,20 @@
       store.set('labels2', opts.labels);
     };
   });
+  // the clock and keys above the announcements, or the other way round
+  const layoutSel = $('#optLayout');
+  let clockTop = store.get('clockTop', false);
+  // refit only on a later change: at start-up the server block below has not
+  // run yet, so fitRemote's own state does not exist
+  function applyLayout(refit) {
+    document.body.classList.toggle('clocktop', clockTop);
+    store.set('clockTop', clockTop);
+    if (refit) fitRemote();
+  }
+  layoutSel.value = clockTop ? 'clock-top' : 'announcements-top';
+  layoutSel.onchange = (e) => { clockTop = e.target.value === 'clock-top'; applyLayout(true); };
+  applyLayout(false);
+
   // keys: both (default) | washroom | handin | none
   const keysSel = $('#optKeys');
   function applyKeys(v) {
@@ -722,7 +744,9 @@
   divider.addEventListener('mousedown', (e) => { dragging = true; e.preventDefault(); });
   document.addEventListener('mousemove', (e) => {
     if (!dragging) return;
-    const pct = Math.max(12, Math.min(70, e.clientY / window.innerHeight * 100));
+    let raw = e.clientY / window.innerHeight * 100;
+    if (clockTop) raw = 100 - raw;                 // the announcements are underneath
+    const pct = Math.max(12, Math.min(70, raw));
     top.style.height = pct + '%';
     fitClock();
   });

@@ -1,4 +1,4 @@
-EXAM BOARD  v1.0
+EXAM BOARD  v1.0.1
 Designed by Armin Jamshidpey (code written with the assistance of a generative AI tool).
 Copyright (c) 2026 Armin Jamshidpey, MIT License (see LICENSE)
 =========================================================
@@ -15,7 +15,7 @@ PLEASE READ FIRST: WHAT THIS IS AND IS NOT
   as well. Use at your own risk; see LICENSE for the warranty
   disclaimer.
 
-  HOW FAR IT HAS BEEN TESTED, as of v1.0. The stand-alone version
+  HOW FAR IT HAS BEEN TESTED, as of v1.0.1. The stand-alone version
   has been used in a real exam, in two rooms. The live version has
   been tested thoroughly but has NOT yet run in a real exam, so if
   you are the first to use it that way, set it up and watch it in
@@ -145,6 +145,12 @@ DURING THE EXAM (coordinator)
   end:        11:30
   duration:   110            length in minutes; use INSTEAD of end:
                              (end = start + duration)
+  layout:     announcements-top   (default) announcements fill the top
+                                  half, clock and keys the bottom
+              clock-top           the other way round: clock and keys
+                                  on top, announcements underneath.
+                                  Useful where the top of the screen
+                                  is the part everyone can see.
   keys:       both           (default) both keys are shown
               washroom       only the washroom key
               handin         only the hand-in key
@@ -280,7 +286,11 @@ STAND-ALONE VERSION (BACKUP): exam-board.html
     second, smaller line, e.g.
         Washroom\\(need to wait for a Proctor):
   - The gear menu's "Keys: Show" chooses both keys, one of them, or
-    none at all; with none the clock takes the whole width.
+    none at all; with none the clock takes the whole width. The keys
+    are named by position, "Top key" and "Bottom key", because their
+    labels can be changed, so "Washroom" would not stay accurate.
+  - The gear menu's "Layout: Order" puts the clock and keys above the
+    announcements instead of below them.
   - Settings and the last message are remembered on that PC.
 
   ANNOUNCEMENTS FROM THE SERVER (optional)
