@@ -56,6 +56,10 @@ FILES
   exam.txt         the control file (the coordinator edits this)
   demo.txt         a sample control file for trying the page at any
                    hour: open exam-live.html?file=demo.txt
+  rehearsal.txt    a control file for a one hour dress rehearsal with
+                   colleagues instead of students, with the whole hour
+                   written out step by step in its comments: open
+                   exam-live.html?file=rehearsal.txt
   tree.svg         the sample picture used by demo.txt
   katex/           math rendering library (leave as is)
   exam-board.html  the stand-alone version: the BACKUP. It needs no
@@ -291,7 +295,14 @@ STAND-ALONE VERSION (BACKUP): exam-board.html
     labels can be changed, so "Washroom" would not stay accurate.
   - The gear menu's "Layout: Order" puts the clock and keys above the
     announcements instead of below them.
-  - Settings and the last message are remembered on that PC.
+  - Settings and the last message are remembered on that PC. They
+    belong to the browser profile, not to the person, so on a podium PC
+    where every proctor uses the same Windows account the next proctor
+    inherits them, including the last announcement that was typed.
+    "Reset everything to defaults" at the bottom of the gear menu gives
+    a clean board: press it twice, the second press clears the message
+    and every setting. An address carried in the link as ?src= survives
+    it, so a link sent to the rooms keeps working.
 
   ANNOUNCEMENTS FROM THE SERVER (optional)
   The gear menu has a field "Control file address". Leave it empty and

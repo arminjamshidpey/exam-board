@@ -31,6 +31,11 @@ v1.0, 2026-11-09
 v1.0.1, 2026-11-09
   - layout: line (and a chooser in the stand-alone's gear menu) to put
     the clock and keys above the announcements instead of below.
+  - The stand-alone's keys are named by position in the gear menu, "Top
+    key" and "Bottom key", since their labels can be changed.
+  - "Reset everything to defaults" in the stand-alone's gear menu, for
+    a podium PC where the previous proctor's settings and message are
+    still on screen. It removes only this page's own saved settings.
 
 v0.9 (beta), 2026-10-15
   First version shown to colleagues.

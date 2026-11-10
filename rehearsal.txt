@@ -1,0 +1,117 @@
+# ===========================================================
+#  Exam Board rehearsal control file
+#
+#  A one hour dress rehearsal with colleagues instead of
+#  students. Put this next to exam-live.html and send out
+#      https://your.site/examboard/exam-live.html?file=rehearsal.txt
+#  so the real exam.txt is left alone.
+#
+#  BEFORE YOU START
+#  Pick a start time about 5 minutes from now and change the
+#  five times below. The offsets are what matter, not the
+#  clock values; the ones here assume a 14:00 start.
+#
+#    start     14:00    pick this, about 5 minutes from now
+#    washroom  14:08    start + 8   to start + 30
+#    handin    14:20    start + 20  to start + 28
+#    end       14:30    start + 30
+#
+#  THE HOUR, step by step. Everything in CAPITALS is something
+#  you do to this file while the others watch their screens.
+#
+#  start - 5  Everyone opens the link and presses Full screen.
+#             All screens should show the instructions block and
+#             "Don't start yet, read above" in red where the
+#             clock goes. Ask everyone to read out the time on
+#             their screen: all of them should be the same to
+#             the second, whatever each computer's own clock
+#             says. This is the whole point of the live version,
+#             so do not skip it.
+#  start      Without anyone touching anything, every screen
+#             should switch to the announcement block and the
+#             clock, at the same moment.
+#  start + 5  EDIT the announcement block at the bottom of this
+#             file: change the integral, and uncomment the
+#             \includegraphics line. Save. Within about 5
+#             seconds every screen shows the new text, and the
+#             picture should be fully inside the panel with
+#             nothing cut off at the bottom.
+#  start + 8  The washroom key turns green by itself, in every
+#             room, with no one pressing anything.
+#  start + 12 SET  washroom-override: off  and save. Every
+#             washroom key goes red even though the time window
+#             is open. Then CLEAR it again and watch them all
+#             go back to green.
+#  start + 15 BREAK something on purpose: change hours: 12 to
+#             hours: twelve and save. Every toolbar should show
+#             an orange warning naming the line. Fix it again.
+#  start + 20 The hand-in key turns green by itself.
+#  start + 28 The hand-in key turns red again by itself.
+#  start + 30 Every screen turns red with the end message. Now
+#             ask ONE person to press "Papers collected" on
+#             their own machine. Only their screen turns green.
+#             Everybody else should still be red. Then a second
+#             person presses it.
+#  start + 32 EXTEND the exam: change end: to start + 42 and
+#             save. The boards that had ended go back to the
+#             clock and the announcement, and the "Papers
+#             collected" button disappears again.
+#  start + 42 The real end. Everyone presses "Papers collected".
+#  afterwards Leave every page open and untouched for 10 more
+#             minutes. Nothing should blank, freeze or drift,
+#             and the clocks should still agree at the end.
+#
+#  WHAT TO WRITE DOWN
+#  Ask each person for their browser, their screen size, and
+#  anything that was ever different on their screen from
+#  everyone else's. A difference between two rooms is the only
+#  kind of bug this rehearsal is really hunting for.
+# ===========================================================
+
+department: Cheriton School of Computer Science
+logo:      logo.png
+course:    REHEARSAL, not a real exam
+
+timeserver:
+
+# No date: line, so this file is live whenever you open it.
+idlemessage: No exam in progress.
+
+start:     14:00
+end:       14:30
+
+layout:    announcements-top
+keys:      both
+hours:     24
+seconds:   yes
+times:     yes
+display:   clock
+
+washroom:  14:08-14:30
+handin:    14:20-14:28
+
+washroom-override:
+handin-override:
+
+endmessage:     Time is up. Please remain in your seats until all papers have been collected.
+releasemessage: All papers have been collected. You may leave now.
+
+fontsize:  44
+
+instructions:
+\textbf{This is a rehearsal, not a real exam.}
+
+\begin{itemize}
+  \item Open this page and press Full screen.
+  \item Then leave it alone and watch it.
+  \item Say something if your screen is ever different from everyone else's.
+\end{itemize}
+
+announcement:
+\textbf{Correction, Question 3:} the integral should read
+\[ \int_0^1 x^2\,dx = \frac{1}{3}, \quad\text{not } \frac{1}{2}. \]
+
+Show all your work. Raise your hand if you have a question.
+
+% At start + 5, change the integral above and remove the % below.
+% \includegraphics[width=25%]{tree.svg}

@@ -252,6 +252,10 @@
   #settings select { font-family: inherit; font-size: 13px; padding: 3px 6px; border-radius: 5px;
                      border: 1px solid var(--line); background: var(--bg); color: var(--text); }
   #settings h4 { margin: 4px 0 0; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  #resetBtn { margin-top: 6px; font-family: inherit; font-size: 13px; padding: 5px 8px; border-radius: 5px;
+              border: 1px solid var(--line); background: var(--bg); color: var(--muted); cursor: pointer; }
+  #resetBtn:hover { color: var(--text); }
+  #resetBtn.armed { color: var(--warn); border-color: var(--warn); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -325,6 +329,7 @@
   <label>Bottom key <input type="text" id="lbl2"></label>
   <!-- <label>Key 3 <input type="text" id="lbl3"></label> -->
   <label>Reset keys to OFF on start <input type="checkbox" id="optResetKeys" checked></label>
+  <button id="resetBtn">Reset everything to defaults</button>
 </div>
 
 <script>
@@ -753,6 +758,33 @@
   document.addEventListener('mouseup', () => {
     if (dragging) { dragging = false; store.set('topHeight', parseFloat(top.style.height)); }
   });
+
+  // ---------- reset to defaults ----------
+  // Everything this page remembers on the PC, so a proctor who inherits
+  // someone else's settings can get a clean board in two clicks. Only
+  // these names are removed, never the whole site's storage. An address
+  // carried in the link survives, because the reload keeps ?src=.
+  const SAVED = ['fontSize', 'message', 'theme', 'h24', 'sec', 'date', 'resetKeys',
+                 'labels2', 'dept', 'keyStates', 'clockTop', 'keysShown',
+                 'srvUrl', 'srvBlock', 'topHeight'];
+  const resetBtn = $('#resetBtn');
+  let armed = null;
+  function disarm() {
+    clearTimeout(armed); armed = null;
+    resetBtn.textContent = 'Reset everything to defaults';
+    resetBtn.classList.remove('armed');
+  }
+  resetBtn.onclick = () => {
+    if (!armed) {                                  // first click only arms it
+      resetBtn.textContent = 'Press again to clear the message and all settings';
+      resetBtn.classList.add('armed');
+      armed = setTimeout(disarm, 5000);
+      return;
+    }
+    clearTimeout(armed);
+    try { SAVED.forEach((k) => localStorage.removeItem(k)); } catch (e) {}
+    location.reload();
+  };
 })();
 </script>
 </body>
