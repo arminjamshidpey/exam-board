@@ -27,6 +27,9 @@ start:     09:00
 end:       11:30
 # Instead of "end:" you may give the length in minutes:  duration: 110
 
+# Which keys to show: both (default), washroom, handin, none
+keys:      both
+
 # Clock format: 12 (default, "9:05 AM") or 24 ("09:05")
 hours:     12
 

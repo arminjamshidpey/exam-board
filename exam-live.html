@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Exam Board Live v0.9 (beta)
+  Exam Board Live v1.0
   Designed by Armin Jamshidpey (code written with the assistance of a generative AI tool).
   Copyright (c) 2026 Armin Jamshidpey. Released under the MIT License (see LICENSE).
   Exam-room display driven by a control text file (see README.txt).
@@ -9,7 +9,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Exam Board Live v0.9 (beta)</title>
+<title>Exam Board Live v1.0</title>
 <link rel="stylesheet" href="katex/katex.min.css">
 <script defer src="katex/katex.min.js"></script>
 <script defer src="katex/auto-render.min.js"></script>
@@ -146,8 +146,10 @@
   body.ended #clock, body.ended #ampm, body.released #clock, body.released #ampm { display: none; }
   body.ended #notice, body.released #notice { display: block; }
   body.released #notice { color: var(--on); }
-  body.released #keysPane { display: none; }
-  body.released #clockPane { width: 100%; }
+  body.released #keysPane, body.nokeys #keysPane { display: none; }
+  body.released #clockPane, body.nokeys #clockPane { width: 100%; }
+  body.onekey #keyWashroom, body.onekey #keyHandin { display: none; }
+  body.onekey.washroom #keyWashroom, body.onekey.handin #keyHandin { display: flex; }
   #collectBtn { display: none; }
   body.ended #collectBtn, body.released #collectBtn { display: inline-block; }
   body.released #collectBtn { background: var(--on); color: var(--on-text); }
@@ -415,13 +417,21 @@
   let lastAnnouncement = null;
   let maxFont = 44;
   // Shrink the announcement text until it fits the panel (so nothing is hidden off-screen)
+  // Nobody can scroll a wall, so everything has to fit: shrink the text to a
+  // readable floor first, then the pictures, which have no such floor.
   function fitAnnouncement() {
-    ann.style.setProperty('--fig-max', Math.max(80, ann.clientHeight * 0.85) + 'px');
+    let fig = Math.max(80, ann.clientHeight * 0.85);
+    ann.style.setProperty('--fig-max', fig + 'px');
     let size = maxFont;
     ann.style.fontSize = size + 'px';
-    for (let i = 0; i < 40 && ann.scrollHeight > ann.clientHeight + 1 && size > 16; i++) {
+    const over = () => ann.scrollHeight > ann.clientHeight + 1;
+    for (let i = 0; i < 40 && over() && size > 16; i++) {
       size = Math.max(16, size * 0.92);
       ann.style.fontSize = size + 'px';
+    }
+    for (let i = 0; i < 25 && over() && fig > 50; i++) {
+      fig = Math.max(50, fig * 0.88);
+      ann.style.setProperty('--fig-max', fig + 'px');
     }
   }
   function renderAnnouncement(text) {
@@ -473,6 +483,12 @@
     showSeconds = !/^(no|off|false|hide)$/i.test((c.seconds || '').trim());
     showTimes   = !/^(no|off|false|hide)$/i.test((c.times || '').trim());
     h24         = /^(24|24h|24-hour)$/i.test((c.hours || '').trim());
+    // keys: both (default) | none | washroom | handin
+    const kw = (c.keys || '').trim().toLowerCase() || 'both';
+    document.body.classList.toggle('nokeys', kw === 'none' || kw === 'no');
+    document.body.classList.toggle('onekey', kw === 'washroom' || kw === 'handin');
+    document.body.classList.toggle('washroom', kw === 'washroom');
+    document.body.classList.toggle('handin', kw === 'handin');
     document.body.classList.toggle('countdown', countdown);
     $('#ampm').style.display = '';
     winHandin = parseWindow(c.handin); winWash = parseWindow(c.washroom);
@@ -522,13 +538,16 @@
     }
     const hv = (c.hours || '').trim().toLowerCase();
     if (hv && !/^(12|24|12h|24h|12-hour|24-hour)$/.test(hv)) w.push('hours "' + hv + '" should be 12 or 24');
+    const kv = (c.keys || '').trim().toLowerCase();
+    if (kv && !/^(both|none|no|washroom|handin|hand-in)$/.test(kv))
+      w.push('keys "' + kv + '" should be both, none, washroom or handin');
     for (const k of Object.keys(c)) {
       if (!KNOWN_KEYS.has(k)) w.push('unknown setting "' + k + ':"');
     }
     return w;
   }
   const KNOWN_KEYS = new Set(['course', 'department', 'logo', 'timeserver', 'start', 'end', 'duration', 'display',
-    'handin', 'washroom', 'handin-override', 'washroom-override', 'fontsize', 'endmessage', 'releasemessage', 'date', 'idlemessage', 'seconds', 'times', 'hours', 'instructions', 'announcement']);
+    'handin', 'washroom', 'handin-override', 'washroom-override', 'fontsize', 'endmessage', 'releasemessage', 'date', 'idlemessage', 'seconds', 'times', 'hours', 'keys', 'instructions', 'announcement']);
   let configWarnings = [];
 
   // ---------- phase: before the start time, show instructions + "Don't start yet" ----------

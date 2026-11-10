@@ -1,11 +1,10 @@
-EXAM BOARD  v0.9 (beta)
+EXAM BOARD  v1.0
 Designed by Armin Jamshidpey (code written with the assistance of a generative AI tool).
 Copyright (c) 2026 Armin Jamshidpey, MIT License (see LICENSE)
 =========================================================
 
-PLEASE READ FIRST: BETA SOFTWARE, USE WITH CAUTION
-  This is a beta version. It is a visual aid for the exam room and
-  nothing more. It does not replace the proctors, the official
+PLEASE READ FIRST: WHAT THIS IS AND IS NOT
+  It is a visual aid for the exam room and nothing more. It does not replace the proctors, the official
   announcements, the official clock, or the exam regulations of
   your institution. Proctors remain fully responsible for the
   conduct of the exam: for announcing and enforcing start and end
@@ -15,6 +14,14 @@ PLEASE READ FIRST: BETA SOFTWARE, USE WITH CAUTION
   file before the exam starts, and keep an ordinary clock visible
   as well. Use at your own risk; see LICENSE for the warranty
   disclaimer.
+
+  HOW FAR IT HAS BEEN TESTED, as of v1.0. The stand-alone version
+  has been used in a real exam, in two rooms. The live version has
+  been tested thoroughly but has NOT yet run in a real exam, so if
+  you are the first to use it that way, set it up and watch it in
+  the room a day beforehand, and keep the stand-alone version to
+  hand. Reports of either going well or badly are welcome on the
+  Issues page.
 
 WHAT IT IS
   Exam Board is for an exam that takes place in several rooms at
@@ -138,6 +145,13 @@ DURING THE EXAM (coordinator)
   end:        11:30
   duration:   110            length in minutes; use INSTEAD of end:
                              (end = start + duration)
+  keys:       both           (default) both keys are shown
+              washroom       only the washroom key
+              handin         only the hand-in key
+              none           no keys at all; the clock takes the whole
+                             width. For a room that only needs the time
+                             and the announcements, or one with no board
+                             to write on.
   hours:      12             (default) the clock reads 9:05 AM
               24             the clock reads 09:05 and the AM/PM line
                              disappears, giving the digits more room.
@@ -265,6 +279,8 @@ STAND-ALONE VERSION (BACKUP): exam-board.html
     stick or in the shared channel. In a key label, \\ starts a
     second, smaller line, e.g.
         Washroom\\(need to wait for a Proctor):
+  - The gear menu's "Keys: Show" chooses both keys, one of them, or
+    none at all; with none the clock takes the whole width.
   - Settings and the last message are remembered on that PC.
 
   ANNOUNCEMENTS FROM THE SERVER (optional)

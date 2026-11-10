@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Exam Board v0.9 (beta)
+  Exam Board v1.0
   Designed by Armin Jamshidpey (code written with the assistance of a generative AI tool).
   Copyright (c) 2026 Armin Jamshidpey. Released under the MIT License (see LICENSE).
   Stand-alone exam-room display; no server or internet needed.
@@ -9,7 +9,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Exam Board v0.9 (beta)</title>
+<title>Exam Board v1.0</title>
 <style>
   :root {
     --bg: #0b0f14;
@@ -160,6 +160,10 @@
     white-space: nowrap;
   }
 
+  body.nokeys #keysPane { display: none; }
+  body.nokeys #clockPane { width: 100%; }
+  body.onekey .key { display: none; }
+  body.onekey.washroom .key[data-key="1"], body.onekey.handin .key[data-key="2"] { display: flex; }
   #keysPane {
     width: 25%;
     display: flex;
@@ -301,6 +305,13 @@
   <label>24-hour <input type="checkbox" id="opt24"></label>
   <label>Show seconds <input type="checkbox" id="optSec" checked></label>
   <label>Show date <input type="checkbox" id="optDate" checked></label>
+  <h4>Keys</h4>
+  <label>Show <select id="optKeys">
+    <option value="both">Both</option>
+    <option value="washroom">Washroom only</option>
+    <option value="handin">Hand-in only</option>
+    <option value="none">None</option>
+  </select></label>
   <h4>Key labels &nbsp;<span style="font-weight:400;text-transform:none;letter-spacing:0">(use \\ for a second line)</span></h4>
   <label>Key 1 <input type="text" id="lbl1"></label>
   <label>Key 2 <input type="text" id="lbl2"></label>
@@ -447,6 +458,20 @@
       store.set('labels2', opts.labels);
     };
   });
+  // keys: both (default) | washroom | handin | none
+  const keysSel = $('#optKeys');
+  function applyKeys(v) {
+    document.body.classList.toggle('nokeys', v === 'none');
+    document.body.classList.toggle('onekey', v === 'washroom' || v === 'handin');
+    document.body.classList.toggle('washroom', v === 'washroom');
+    document.body.classList.toggle('handin', v === 'handin');
+    store.set('keysShown', v);
+  }
+  let keysShown = store.get('keysShown', 'both');
+  keysSel.value = keysShown;
+  keysSel.onchange = (e) => { keysShown = e.target.value; applyKeys(keysShown); };
+  applyKeys(keysShown);
+
   function setKey(i, on) {
     keys[i].classList.toggle('on', on);
     keys[i].querySelector('.state').textContent = on ? 'Allowed' : 'Not allowed';
@@ -460,7 +485,9 @@
     if (e.ctrlKey && e.key === '-') { e.preventDefault(); stepFont(-1); return; }
     if (e.ctrlKey && (e.key === 'z' || e.key === 'Z') && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); undo(); return; }
     if (typing) { if (e.key === 'Escape') msg.blur(); return; }
-    if (/^[1-9]$/.test(e.key) && keys[+e.key - 1]) { const i = +e.key - 1; setKey(i, !keys[i].classList.contains('on')); }
+    if (/^[1-9]$/.test(e.key) && keys[+e.key - 1] && keys[+e.key - 1].offsetParent !== null) {
+      const i = +e.key - 1; setKey(i, !keys[i].classList.contains('on'));
+    }
     if (e.key === 'f' || e.key === 'F') toggleFull();
     if (e.key === 'Escape') settings.classList.remove('open');
   });

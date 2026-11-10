@@ -2,6 +2,32 @@ EXAM BOARD CHANGELOG
 Newest first. Version numbers are in the <title> and header comment of
 each .html file and at the top of README.txt.
 
+v1.0, 2026-11-09
+  First release. The control file format is now settled: every setting
+  added since v0.9 has a default that keeps the old behaviour, so a
+  control file written for v0.9 still works unchanged.
+  Used in a real exam (stand-alone version, two rooms) on 2026-11-09.
+
+  Since v0.9:
+  - date: and an idle screen, so the page can stay on a wall between
+    exams and show "No exam in progress."
+  - hours:, seconds:, times: and keys: to choose what the bottom half
+    shows: 12- or 24-hour clock, seconds, the Start/End line, and
+    which of the two keys appear (or none at all).
+  - Pictures in announcements with \includegraphics.
+  - The stand-alone version can read announcements from a control file
+    on a server, with the address typed in its gear menu or carried in
+    the link as ?src=, while its clock and keys stay controlled in the
+    room. KaTeX is loaded from beside the control file.
+  - Both pages keep the display awake while they are visible.
+  - The clock is drawn in pure white on dark and near-black on light,
+    so it is readable on a projector in either theme.
+  - Fixed: a long announcement containing a picture could be cut off
+    at the bottom of the panel. Text now shrinks to a readable floor
+    and then the picture shrinks, so all of it fits.
+  - Fixed: making the clock brighter had made its digits invisible in
+    the light theme.
+
 v0.9 (beta), 2026-10-15
   First version shown to colleagues.
   - Stand-alone exam-board.html: large clock, free-text announcements
@@ -31,6 +57,12 @@ v0.9 (beta), 2026-10-15
   - seconds: line to show the clock as HH:MM instead of HH:MM:SS.
   - times: line to hide the "Start ... End ..." line under the clock.
   - hours: line to choose a 12- or 24-hour clock.
+  - keys: line (and a chooser in the stand-alone's gear menu) to show
+    both keys, one of them, or none, for rooms that want only the time
+    and the announcements.
+  - Fixed: a long announcement with a picture could be cut off at the
+    bottom of the panel in the live version. Text now shrinks to a
+    readable floor and then the picture shrinks, so all of it fits.
   - Clock drawn in pure white on dark and near-black on light, so it
     stays readable in both themes on a projector.
   - README with setup, checklist, customisation for other
